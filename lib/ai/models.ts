@@ -8,13 +8,18 @@ export interface ChatModel {
 
 export const chatModels: Array<ChatModel> = [
   {
-    id: 'chat-model',
-    name: 'Chat model',
-    description: 'Primary model for all-purpose chat',
+    id: "chat-model",
+    name: "Chat model",
+    description: "Primary model for all-purpose chat",
   },
   {
-    id: 'chat-model-reasoning',
-    name: 'Reasoning model',
-    description: 'Uses advanced reasoning',
+    id: "chat-model-reasoning",
+    name: "Reasoning model",
+    description: "Uses advanced reasoning",
+  },
+  {
+    id: "deepseek/deepseek-chat-v3-0324:free",
+    name: "DeepSeek: DeepSeek V3 0324",
+    description: "685B-parameter, mixture-of-experts model",
   },
 ];

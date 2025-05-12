@@ -36,6 +36,11 @@ export function ModelSelector({
     availableChatModelIds.includes(chatModel.id),
   );
 
+  console.log(
+    'availableChatModels',
+    availableChatModels.map((model) => model.id),
+  );
+
   const selectedChatModel = useMemo(
     () =>
       availableChatModels.find(
