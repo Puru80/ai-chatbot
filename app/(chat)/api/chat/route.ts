@@ -153,6 +153,8 @@ export async function POST(request: Request) {
     const streamId = generateUUID();
     await createStreamId({ streamId, chatId: id });
 
+    console.log("Selected model:", myProvider.languageModel(selectedChatModel));
+
     const stream = createDataStream({
       execute: (dataStream) => {
         const result = streamText({
@@ -169,17 +171,17 @@ export async function POST(request: Request) {
                   "updateDocument",
                   "requestSuggestions",
                 ],
-          experimental_transform: smoothStream({ chunking: "word" }),
+          // experimental_transform: smoothStream({ chunking: "word" }),
           experimental_generateMessageId: generateUUID,
-          tools: {
-            getWeather,
-            createDocument: createDocument({ session, dataStream }),
-            updateDocument: updateDocument({ session, dataStream }),
-            requestSuggestions: requestSuggestions({
-              session,
-              dataStream,
-            }),
-          },
+          // tools: {
+          //   getWeather,
+          //   createDocument: createDocument({ session, dataStream }),
+          //   updateDocument: updateDocument({ session, dataStream }),
+          //   requestSuggestions: requestSuggestions({
+          //     session,
+          //     dataStream,
+          //   }),
+          // },
           onFinish: async ({ response }) => {
             if (session.user?.id) {
               try {
@@ -221,6 +223,8 @@ export async function POST(request: Request) {
             functionId: "stream-text",
           },
         });
+
+        console.log(result);
 
         result.consumeStream();
 

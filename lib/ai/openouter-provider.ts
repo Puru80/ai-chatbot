@@ -6,7 +6,7 @@ import { BaseProvider } from "./base-provider";
 import { ModelInfo } from "./types";
 
 export class OpenRouterProvider extends BaseProvider {
-  name = "openRouter";
+  name = "OpenRouter";
   config = {
     baseUrlKey: "OPENROUTER_BASE_URL",
     apiKey: process.env.OPENROUTER_API_KEY,

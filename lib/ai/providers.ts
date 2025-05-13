@@ -37,8 +37,6 @@ import { OpenRouterProvider } from "./openouter-provider";
       },
     }); */
 
-console.log("test environment: ", isTestEnvironment);
-
 export const myProvider = isTestEnvironment
   ? customProvider({
       languageModels: {
