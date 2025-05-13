@@ -25,9 +25,6 @@ export class OpenRouterProvider extends BaseProvider {
   getModelInstance(options: { model: string }): LanguageModelV1 {
     const { model } = options;
 
-    // console.log("OpenRouterProvider getModelInstance", model);
-    // console.log("OpenRouter API KEY: ", this.config.apiKey);
-
     const openRouter = createOpenRouter({
       apiKey: this.config.apiKey,
     });
@@ -41,7 +38,7 @@ export class OpenRouterProvider extends BaseProvider {
       },
     }); */
 
-    const instance = openRouter.chat(model) as LanguageModelV1;
+    const instance = openRouter.languageModel(model) as LanguageModelV1;
 
     return instance;
   }

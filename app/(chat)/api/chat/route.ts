@@ -2,8 +2,11 @@ import {
   appendClientMessage,
   appendResponseMessages,
   createDataStream,
+  InvalidToolArgumentsError,
+  NoSuchToolError,
   smoothStream,
   streamText,
+  ToolExecutionError,
 } from "ai";
 import { auth, type UserType } from "@/app/(auth)/auth";
 import { type RequestHints, systemPrompt } from "@/lib/ai/prompts";
@@ -162,26 +165,26 @@ export async function POST(request: Request) {
           system: systemPrompt({ selectedChatModel, requestHints }),
           messages,
           maxSteps: 5,
-          experimental_activeTools:
-            selectedChatModel === "chat-model-reasoning"
-              ? []
-              : [
-                  "getWeather",
-                  "createDocument",
-                  "updateDocument",
-                  "requestSuggestions",
-                ],
-          // experimental_transform: smoothStream({ chunking: "word" }),
+          // experimental_activeTools:
+          //   selectedChatModel === "chat-model-reasoning"
+          //     ? []
+          //     : [
+          //         "getWeather",
+          //         "createDocument",
+          //         "updateDocument",
+          //         "requestSuggestions",
+          //       ],
+          experimental_transform: smoothStream({ chunking: "line" }),
           experimental_generateMessageId: generateUUID,
-          // tools: {
-          //   getWeather,
-          //   createDocument: createDocument({ session, dataStream }),
-          //   updateDocument: updateDocument({ session, dataStream }),
-          //   requestSuggestions: requestSuggestions({
-          //     session,
-          //     dataStream,
-          //   }),
-          // },
+          tools: {
+            // getWeather,
+            // createDocument: createDocument({ session, dataStream }),
+            // updateDocument: updateDocument({ session, dataStream }),
+            // requestSuggestions: requestSuggestions({
+            //   session,
+            //   dataStream,
+            // }),
+          },
           onFinish: async ({ response }) => {
             if (session.user?.id) {
               try {
@@ -224,7 +227,12 @@ export async function POST(request: Request) {
           },
         });
 
-        console.log(result);
+        result.toDataStreamResponse({
+          getErrorMessage: (error) => {
+            console.log("Possible Error: ", error);
+            return "An unknown error occurred.";
+          },
+        });
 
         result.consumeStream();
 
