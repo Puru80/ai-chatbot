@@ -1,25 +1,32 @@
-export const DEFAULT_CHAT_MODEL: string = 'chat-model';
+import { LLMManager } from "./manager";
+import { ModelInfo } from "./types";
+
+export const DEFAULT_CHAT_MODEL: string = "deepseek/deepseek-chat-v3-0324:free";
 
 export interface ChatModel {
   id: string;
-  name: string;
+  label: string;
   description: string;
 }
 
-export const chatModels: Array<ChatModel> = [
+/* export const chatModels: Array<ChatModel> = [
   {
     id: "chat-model",
-    name: "Chat model",
+    label: "Chat model",
     description: "Primary model for all-purpose chat",
   },
   {
     id: "chat-model-reasoning",
-    name: "Reasoning model",
+    label: "Reasoning model",
     description: "Uses advanced reasoning",
   },
   {
     id: "deepseek/deepseek-chat-v3-0324:free",
-    name: "DeepSeek: DeepSeek V3 0324",
+    label: "DeepSeek: DeepSeek V3 0324",
     description: "685B-parameter, mixture-of-experts model",
   },
 ];
+ */
+
+const manager = LLMManager.getInstance();
+export const chatModels: Array<ModelInfo> = manager.getModelList();

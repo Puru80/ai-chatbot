@@ -22,12 +22,12 @@ import {
 } from "@/lib/db/queries";
 import { generateUUID, getTrailingMessageId } from "@/lib/utils";
 import { generateTitleFromUserMessage } from "../../actions";
-import { createDocument } from "@/lib/ai/tools/create-document";
-import { updateDocument } from "@/lib/ai/tools/update-document";
-import { requestSuggestions } from "@/lib/ai/tools/request-suggestions";
-import { getWeather } from "@/lib/ai/tools/get-weather";
+// import { createDocument } from "@/lib/ai/tools/create-document";
+// import { updateDocument } from "@/lib/ai/tools/update-document";
+// import { requestSuggestions } from "@/lib/ai/tools/request-suggestions";
+// import { getWeather } from "@/lib/ai/tools/get-weather";
 import { isProductionEnvironment } from "@/lib/constants";
-import { myProvider } from "@/lib/ai/providers";
+// import { myProvider } from "@/lib/ai/providers";
 import { entitlementsByUserType } from "@/lib/ai/entitlements";
 import { postRequestBodySchema, type PostRequestBody } from "./schema";
 import { geolocation } from "@vercel/functions";
@@ -38,8 +38,10 @@ import {
 import { after } from "next/server";
 import type { Chat } from "@/lib/db/schema";
 import { differenceInSeconds } from "date-fns";
+import { OpenRouterProvider } from "@/lib/ai/openrouter-provider";
 
 export const maxDuration = 60;
+const openRouterProvider = new OpenRouterProvider();
 
 let globalStreamContext: ResumableStreamContext | null = null;
 
@@ -79,8 +81,6 @@ export async function POST(request: Request) {
   try {
     const { id, message, selectedChatModel, selectedVisibilityType } =
       requestBody;
-
-    console.log("Request body:", requestBody);
 
     const session = await auth();
 
@@ -156,12 +156,15 @@ export async function POST(request: Request) {
     const streamId = generateUUID();
     await createStreamId({ streamId, chatId: id });
 
-    console.log("Selected model:", myProvider.languageModel(selectedChatModel));
+    console.log("Selected model:", selectedChatModel);
+
+    // Get LLMMAnager instance
+    // Get model and build the language/text/.. model here
 
     const stream = createDataStream({
       execute: (dataStream) => {
         const result = streamText({
-          model: myProvider.languageModel(selectedChatModel),
+          model: openRouterProvider.getModelInstance({model: selectedChatModel}),
           system: systemPrompt({ selectedChatModel, requestHints }),
           messages,
           maxSteps: 5,
