@@ -1,7 +1,7 @@
 import {
   extractReasoningMiddleware,
   LanguageModelV1,
-  wrapLanguageModel
+  wrapLanguageModel,
 } from "ai";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { BaseProvider } from "./base-provider";
@@ -21,7 +21,7 @@ export class OpenRouterProvider extends BaseProvider {
       provider: "OpenRouter",
       description: "Reasoning Model",
       maxTokenAllowed: 8000,
-      thinking: true
+      thinking: true,
     },
     {
       id: "deepseek/deepseek-chat-v3-0324:free",
@@ -30,10 +30,18 @@ export class OpenRouterProvider extends BaseProvider {
       description: "Misture of Experts(MoE)",
       maxTokenAllowed: 8000,
     },
+    {
+      id: "meta-llama/llama-4-scout:free",
+      label: "Meta: Llama 4 Scout (free)",
+      provider: "OpenRouter",
+      description:
+        "Supports native multimodal input (text and image) and multilingual output (text and code)",
+      maxTokenAllowed: 8000,
+    },
   ];
 
   getThinkingValue(id: string): boolean {
-    const item = this.staticModels.find(i => i.id === id);
+    const item = this.staticModels.find((i) => i.id === id);
     return item?.thinking ?? false;
   }
 
@@ -47,7 +55,7 @@ export class OpenRouterProvider extends BaseProvider {
 
     const instance = openRouter.languageModel(model) as LanguageModelV1;
 
-    if(this.getThinkingValue(model)){
+    if (this.getThinkingValue(model)) {
       return wrapLanguageModel({
         model: instance,
         middleware: extractReasoningMiddleware({ tagName: "think" }),

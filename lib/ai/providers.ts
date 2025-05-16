@@ -53,12 +53,6 @@ export const myProvider = isTestEnvironment
           model: xai("grok-3-mini-beta"),
           middleware: extractReasoningMiddleware({ tagName: "think" }),
         }),
-        // "deepseek/deepseek-chat-v3-0324:free": wrapLanguageModel({
-        //   model: new OpenRouterProvider().getModelInstance({
-        //     model: "deepseek/deepseek-chat-v3-0324:free",
-        //   }),
-        //   middleware: extractReasoningMiddleware({ tagName: "think" })
-        // }),
         "title-model": xai("grok-2-1212"),
         "artifact-model": xai("grok-2-1212"),
       },
