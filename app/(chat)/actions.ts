@@ -4,7 +4,7 @@ import { generateText, type UIMessage } from 'ai';
 import { cookies } from 'next/headers';
 import {
   deleteMessagesByChatIdAfterTimestamp,
-  getMessageById,
+  getMessageById, updateChatTitleById,
   updateChatVisiblityById,
 } from '@/lib/db/queries';
 import type { VisibilityType } from '@/components/visibility-selector';
@@ -50,4 +50,15 @@ export async function updateChatVisibility({
   visibility: VisibilityType;
 }) {
   await updateChatVisiblityById({ chatId, visibility });
+}
+
+export async function updateChatTitle({
+                                        chatId,
+                                        title,
+                                      }: {
+  chatId: string;
+  title: string;
+}) {
+  // Implement your DB update logic here
+  await updateChatTitleById({ chatId, title }); // You need to implement this in your db/queries
 }
