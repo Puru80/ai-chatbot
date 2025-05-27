@@ -949,6 +949,25 @@ export const ShareIcon = ({ size = 16 }: { size?: number }) => {
   );
 };
 
+export const EditIcon = ({ size = 16 }: { size?: number }) => {
+  return (
+      <svg
+          height={size}
+          strokeLinejoin="round"
+          viewBox="0 0 16 16"
+          width={size}
+          style={{ color: 'currentcolor' }}
+      >
+        <path
+            fillRule="evenodd"
+            clipRule="evenodd"
+            d="M11.0607 2.93934L13.0607 4.93934L5 13H3V11L11.0607 2.93934ZM12.1213 2.29289L13.5858 3.75736L14.2929 3.05025C14.6834 2.65973 14.6834 2.02656 14.2929 1.63604L13.364 0.707107C12.9734 0.316583 12.3403 0.316583 11.9497 0.707107L11.2426 1.41421L12.1213 2.29289ZM2 14.5C1.72386 14.5 1.5 14.7239 1.5 15C1.5 15.2761 1.72386 15.5 2 15.5H14C14.2761 15.5 14.5 15.2761 14.5 15C14.5 14.7239 14.2761 14.5 14 14.5H2Z"
+            fill="currentColor"
+        ></path>
+      </svg>
+  );
+};
+
 export const CodeIcon = ({ size = 16 }: { size?: number }) => {
   return (
     <svg
