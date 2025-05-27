@@ -24,7 +24,7 @@ import {
     ShareIcon,
     TrashIcon,
 } from './icons';
-import React, {memo, useState} from 'react';
+import React, {memo, useEffect, useRef, useState} from 'react';
 import {useChatVisibility} from '@/hooks/use-chat-visibility';
 import {useChatTitle} from "@/hooks/use-chat-title";
 
@@ -54,6 +54,31 @@ const PureChatItem = ({
     const [editOpen, setEditOpen] = useState(false);
     const [newTitle, setNewTitle] = useState(title);
 
+    // Typing animation state
+    const [animatedTitle, setAnimatedTitle] = useState(title);
+    const animationRef = useRef<NodeJS.Timeout | null>(null);
+
+    useEffect(() => {
+        // If the title changed, animate it
+        if (title !== animatedTitle) {
+            let i = 0;
+            if (animationRef.current) clearTimeout(animationRef.current);
+
+            const animate = () => {
+                i++;
+                setAnimatedTitle(title.slice(0, i));
+                if (i < title.length) {
+                    animationRef.current = setTimeout(animate, 40); // 40ms per char
+                }
+            };
+            animate();
+            return () => {
+                if (animationRef.current) clearTimeout(animationRef.current);
+            };
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [title]);
+
     const handleEdit = () => {
         setEditOpen(true);
         setNewTitle(title);
@@ -75,7 +100,7 @@ const PureChatItem = ({
             <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={isActive}>
                     <Link href={`/chat/${chat.id}`} onClick={() => setOpenMobile(false)}>
-                        <span>{title}</span>
+                        <span>{animatedTitle}</span>
                     </Link>
                 </SidebarMenuButton>
 
