@@ -50,11 +50,11 @@ export async function getUser(email: string): Promise<Array<User>> {
   }
 }
 
-export async function createUser(email: string, password: string) {
+export async function createUser(email: string, password: string, provider?: 'credentials' | 'google', type: 'regular' | 'guest' = 'regular') {
   const hashedPassword = generateHashedPassword(password);
 
   try {
-    return await db.insert(user).values({ email, password: hashedPassword });
+    return await db.insert(user).values({ email, password: hashedPassword, provider: provider? provider: null, type: type });
   } catch (error) {
     console.error('Failed to create user in database');
     throw error;
@@ -96,6 +96,7 @@ export async function saveChat({
       visibility,
     });
   } catch (error) {
+    console.log(error)
     console.error('Failed to save chat in database');
     throw error;
   }

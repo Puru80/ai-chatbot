@@ -29,6 +29,7 @@ export function ModelSelector({
   const [optimisticModelId, setOptimisticModelId] =
     useOptimistic(selectedModelId);
 
+  console.log(session.user);
   const userType = session.user.type;
   const { availableChatModelIds } = entitlementsByUserType[userType];
 
