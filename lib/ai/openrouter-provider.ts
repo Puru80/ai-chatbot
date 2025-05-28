@@ -16,18 +16,18 @@ export class OpenRouterProvider extends BaseProvider {
 
   staticModels: ModelInfo[] = [
     {
-      id: "deepseek/deepseek-r1:free",
-      label: "DeepSeek: R1(Free)",
+      id: "qwen/qwq-32b:free",
+      label: "Qwen: QwQ 32B (free)",
       provider: "OpenRouter",
       description: "Reasoning Model",
       maxTokenAllowed: 8000,
       thinking: true,
     },
     {
-      id: "deepseek/deepseek-chat-v3-0324:free",
-      label: "DeepSeek: DeepSeek V3 0324(Free)",
+      id: "google/gemini-2.0-flash-exp:free",
+      label: "Google: Gemini 2.0 Flash Experimental (free)",
       provider: "OpenRouter",
-      description: "Misture of Experts(MoE)",
+      description: "Coding, complex instruction",
       maxTokenAllowed: 8000,
     },
     {
@@ -35,7 +35,7 @@ export class OpenRouterProvider extends BaseProvider {
       label: "Meta: Llama 4 Scout (free)",
       provider: "OpenRouter",
       description:
-        "Supports native multimodal input (text and image) and multilingual output (text and code)",
+        "Text and image multilingual output (text and code)",
       maxTokenAllowed: 8000,
     },
   ];
