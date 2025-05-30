@@ -1,6 +1,7 @@
 'use client';
 
 import type { Attachment, UIMessage } from 'ai';
+import { GuestLimitModal } from './guest-limit-modal';
 import { useChat } from '@ai-sdk/react';
 import { useEffect, useState } from 'react';
 import useSWR, { useSWRConfig } from 'swr';
@@ -104,6 +105,21 @@ export function Chat({
   const [attachments, setAttachments] = useState<Array<Attachment>>([]);
   const isArtifactVisible = useArtifactSelector((state) => state.isVisible);
 
+  // ...inside Chat component
+  const [showGuestModal, setShowGuestModal] = useState(false);
+
+  const isGuest = session?.user?.type === 'guest';
+
+  const handleInputSubmit = async (...args: any[]) => {
+    if (isGuest) {
+      console.log("Guest trying to send prompt");
+      setShowGuestModal(true);
+      return;
+    }
+    // Call the original handleSubmit from useChat
+    return handleSubmit(...args);
+  };
+
   useAutoResume({
     autoResume,
     initialMessages,
@@ -140,7 +156,7 @@ export function Chat({
               chatId={id}
               input={input}
               setInput={setInput}
-              handleSubmit={handleSubmit}
+              handleSubmit={handleInputSubmit}
               status={status}
               stop={stop}
               attachments={attachments}
@@ -171,6 +187,8 @@ export function Chat({
         isReadonly={isReadonly}
         selectedVisibilityType={visibilityType}
       />
+
+      <GuestLimitModal open={showGuestModal} onClose={() => setShowGuestModal(false)} />
     </>
   );
 }
