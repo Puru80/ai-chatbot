@@ -205,8 +205,7 @@ export function Chat({
 
       <GuestLimitModal
         open={showGuestModal}
-        onClose={() => setShowGuestModal(false)}
-      input={input}/>
+        onClose={() => setShowGuestModal(false)}/>
     </>
   );
 }
