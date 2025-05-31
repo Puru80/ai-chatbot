@@ -105,20 +105,35 @@ export function Chat({
   const [attachments, setAttachments] = useState<Array<Attachment>>([]);
   const isArtifactVisible = useArtifactSelector((state) => state.isVisible);
 
-  // ...inside Chat component
   const [showGuestModal, setShowGuestModal] = useState(false);
 
   const isGuest = session?.user?.type === 'guest';
 
   const handleInputSubmit = async (...args: any[]) => {
     if (isGuest) {
-      console.log("Guest trying to send prompt");
+      // Store the current input in localStorage for retrieval after login/signup
+      if (input && input.length > 0) {
+        localStorage.setItem('guest_prompt', input);
+      }
       setShowGuestModal(true);
       return;
     }
     // Call the original handleSubmit from useChat
     return handleSubmit(...args);
   };
+
+  // Restore prompt from localStorage after login/signup
+  useEffect(() => {
+    if (!isGuest) {
+      const storedPrompt = localStorage.getItem('guest_prompt');
+      if (storedPrompt) {
+        setInput(storedPrompt);
+        localStorage.removeItem('guest_prompt');
+      }
+    }
+    // Only run when session changes (i.e., after login/signup)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user?.type]);
 
   useAutoResume({
     autoResume,
@@ -188,7 +203,10 @@ export function Chat({
         selectedVisibilityType={visibilityType}
       />
 
-      <GuestLimitModal open={showGuestModal} onClose={() => setShowGuestModal(false)} />
+      <GuestLimitModal
+        open={showGuestModal}
+        onClose={() => setShowGuestModal(false)}
+      input={input}/>
     </>
   );
 }

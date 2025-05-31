@@ -5,9 +5,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 
 export function GuestLimitModal({
-                                  open,
-                                  onClose,
-                                }: {
+  open,
+  onClose,
+}: {
   open: boolean;
   onClose: () => void;
 }) {
