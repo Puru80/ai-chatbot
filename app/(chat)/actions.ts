@@ -9,6 +9,9 @@ import {
 } from '@/lib/db/queries';
 import type { VisibilityType } from '@/components/visibility-selector';
 import { myProvider } from '@/lib/ai/providers';
+import { OpenRouterProvider } from "@/lib/ai/openrouter-provider";
+
+const openRouterProvider = new OpenRouterProvider();
 
 export async function saveChatModelAsCookie(model: string) {
   const cookieStore = await cookies();
@@ -17,11 +20,13 @@ export async function saveChatModelAsCookie(model: string) {
 
 export async function generateTitleFromUserMessage({
   message,
+  selectedChatModel
 }: {
   message: UIMessage;
+  selectedChatModel: string
 }) {
   const { text: title } = await generateText({
-    model: myProvider.languageModel('title-model'),
+    model: openRouterProvider.getModelInstance({model: selectedChatModel}),
     system: `\n
     - you will generate a short title based on the first message a user begins a conversation with
     - assume that the user will chat on the same topic as the first message

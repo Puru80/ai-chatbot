@@ -113,6 +113,7 @@ export async function POST(request: Request) {
     if (!chat) {
       const title = await generateTitleFromUserMessage({
         message,
+        selectedChatModel
       });
 
       await saveChat({
@@ -161,9 +162,6 @@ export async function POST(request: Request) {
     await createStreamId({ streamId, chatId: id });
 
     console.log("Selected model:", selectedChatModel);
-
-    // Get LLMMAnager instance
-    // Get model and build the language/text/.. model here
 
     const stream = createDataStream({
       execute: (dataStream) => {
