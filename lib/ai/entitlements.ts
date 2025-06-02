@@ -12,14 +12,14 @@ export const entitlementsByUserType: Record<UserType, Entitlements> = {
    */
   guest: {
     maxMessagesPerDay: 20,
-    availableChatModelIds: ["deepseek/deepseek-chat-v3-0324:free"],
+    availableChatModelIds: ["google/gemini-2.0-flash-exp:free"],
   },
 
   /*
    * For users with an account
    */
   regular: {
-    maxMessagesPerDay: 100,
+    maxMessagesPerDay: 5,
     availableChatModelIds: chatModels.map(item => item.id),
   },
 
