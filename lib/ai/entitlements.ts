@@ -12,7 +12,7 @@ export const entitlementsByUserType: Record<UserType, Entitlements> = {
    */
   guest: {
     maxMessagesPerDay: 20,
-    availableChatModelIds: ["google/gemini-2.0-flash-exp:free"],
+    availableChatModelIds: ["meta-llama/llama-3.3-70b-instruct:free"],
   },
 
   /*

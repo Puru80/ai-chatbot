@@ -24,10 +24,10 @@ export class OpenRouterProvider extends BaseProvider {
       thinking: true,
     },
     {
-      id: "google/gemini-2.0-flash-exp:free",
-      label: "Google: Gemini 2.0 Flash Experimental (free)",
+      id: "meta-llama/llama-3.3-70b-instruct:free",
+      label: "Meta: Llama 3.3 70B Instruct (free)",
       provider: "OpenRouter",
-      description: "Coding, complex instruction",
+      description: "Multilingual large language model (LLM)",
       maxTokenAllowed: 8000,
     },
     {

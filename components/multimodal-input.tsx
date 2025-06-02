@@ -24,9 +24,10 @@ import { SuggestedActions } from './suggested-actions';
 import equal from 'fast-deep-equal';
 import type { UseChatHelpers } from '@ai-sdk/react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowDown } from 'lucide-react';
+import { Sparkles , ArrowDown } from 'lucide-react';
 import { useScrollToBottom } from '@/hooks/use-scroll-to-bottom';
 import type { VisibilityType } from './visibility-selector';
+import { Tooltip } from 'react-tooltip';
 
 function PureMultimodalInput({
   chatId,
@@ -198,10 +199,10 @@ function PureMultimodalInput({
       <AnimatePresence>
         {!isAtBottom && (
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 10 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+            initial={{opacity: 0, y: 10}}
+            animate={{opacity: 1, y: 0}}
+            exit={{opacity: 0, y: 10}}
+            transition={{type: 'spring', stiffness: 300, damping: 20}}
             className="absolute left-1/2 bottom-28 -translate-x-1/2 z-50"
           >
             <Button
@@ -214,7 +215,7 @@ function PureMultimodalInput({
                 scrollToBottom();
               }}
             >
-              <ArrowDown />
+              <ArrowDown/>
             </Button>
           </motion.div>
         )}
@@ -245,7 +246,7 @@ function PureMultimodalInput({
           className="flex flex-row gap-2 overflow-x-scroll items-end"
         >
           {attachments.map((attachment) => (
-            <PreviewAttachment key={attachment.url} attachment={attachment} />
+            <PreviewAttachment key={attachment.url} attachment={attachment}/>
           ))}
 
           {uploadQueue.map((filename) => (
@@ -292,12 +293,36 @@ function PureMultimodalInput({
       />
 
       <div className="absolute bottom-0 p-2 w-fit flex flex-row justify-start">
-        <AttachmentsButton fileInputRef={fileInputRef} status={status} />
+        <AttachmentsButton fileInputRef={fileInputRef} status={status}/>
       </div>
+
+      <div className="absolute bottom-4 left-10 z-40">
+        <motion.button
+          data-testid="enhance-prompt-button"
+          onClick={async (event) => {
+            event.preventDefault();
+            // await enhancePrompt();
+          }}
+          disabled={input.length === 0}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className="relative flex items-center gap-2 px-3 py-1 rounded-lg font-medium text-white bg-gradient-to-r from-indigo-500 to-purple-600 shadow-lg transition-all duration-200 group text-sm
+"
+          data-tooltip-id="enhance-tooltip"
+          data-tooltip-content="✨ Enhance Prompt (Pro)"
+        >
+          <Sparkles className="size-4 text-yellow-300 animate-pulse group-hover:animate-none" />
+          Enhance Prompt
+          <div className="absolute -inset-0.5 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-600 opacity-50 blur-md animate-tilt group-hover:opacity-70" />
+        </motion.button>
+
+        <Tooltip id="enhance-tooltip" place="top" className="z-50 text-sm" />
+      </div>
+
 
       <div className="absolute bottom-0 right-0 p-2 w-fit flex flex-row justify-end">
         {status === 'submitted' ? (
-          <StopButton stop={stop} setMessages={setMessages} />
+          <StopButton stop={stop} setMessages={setMessages}/>
         ) : (
           <SendButton
             input={input}
