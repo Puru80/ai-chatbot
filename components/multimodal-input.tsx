@@ -292,33 +292,10 @@ function PureMultimodalInput({
         }}
       />
 
-      <div className="absolute bottom-0 p-2 w-fit flex flex-row justify-start">
+      <div className="absolute gap-3 bottom-0 p-2 w-fit flex flex-row justify-start">
         <AttachmentsButton fileInputRef={fileInputRef} status={status}/>
+        <EnhancePromptButton disabled={false}/>
       </div>
-
-      <div className="absolute bottom-4 left-10 z-40">
-        <motion.button
-          data-testid="enhance-prompt-button"
-          onClick={async (event) => {
-            event.preventDefault();
-            // await enhancePrompt();
-          }}
-          disabled={input.length === 0}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className="relative flex items-center gap-2 px-3 py-1 rounded-lg font-medium text-white bg-gradient-to-r from-indigo-500 to-purple-600 shadow-lg transition-all duration-200 group text-sm
-"
-          data-tooltip-id="enhance-tooltip"
-          data-tooltip-content="✨ Enhance Prompt (Pro)"
-        >
-          <Sparkles className="size-4 text-yellow-300 animate-pulse group-hover:animate-none" />
-          Enhance Prompt
-          <div className="absolute -inset-0.5 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-600 opacity-50 blur-md animate-tilt group-hover:opacity-70" />
-        </motion.button>
-
-        <Tooltip id="enhance-tooltip" place="top" className="z-50 text-sm" />
-      </div>
-
 
       <div className="absolute bottom-0 right-0 p-2 w-fit flex flex-row justify-end">
         {status === 'submitted' ? (
@@ -372,6 +349,48 @@ function PureAttachmentsButton({
 }
 
 const AttachmentsButton = memo(PureAttachmentsButton);
+
+function PureEnhancePromptButton({
+                                   // onEnhance,
+                                   disabled,
+                                 }: {
+  // onEnhance: () => void;
+  disabled: boolean;
+}) {
+  return (
+    <motion.div
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
+      className="relative"
+    >
+      <Button
+        data-testid="enhance-prompt-button"
+        onClick={(event) => {
+          event.preventDefault();
+          // onEnhance();
+        }}
+        disabled={disabled}
+        variant="ghost"
+        className={`
+          rounded-md rounded-bl-lg p-[7px] h-fit
+          text-purple-600 dark:text-purple-400
+          border border-purple-300 dark:border-purple-700
+          hover:bg-purple-100 dark:hover:bg-zinc-900
+          transition-all duration-200
+          relative
+        `}
+      >
+        <Sparkles className="size-4 mr-1 animate-pulse text-purple-500" />
+        <span className="text-xs font-medium">Enhance</span>
+        <span className="absolute -top-3 -right-1 text-[10px] bg-yellow-400 text-black px-1 rounded shadow-sm">
+          Pro
+        </span>
+      </Button>
+    </motion.div>
+  );
+}
+
+export const EnhancePromptButton = memo(PureEnhancePromptButton);
 
 function PureStopButton({
   stop,
