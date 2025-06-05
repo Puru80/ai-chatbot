@@ -69,9 +69,11 @@ export async function POST(request: Request) {
   console.log("POST /api/chat");
 
   let requestBody: PostRequestBody;
+  console.log("Request: ", request);
 
   try {
     const json = await request.json();
+    console.log("Parsed JSON: ", json);
     requestBody = postRequestBodySchema.parse(json);
   } catch (e) {
     console.log("Error: ", e);

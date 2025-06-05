@@ -27,7 +27,6 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Sparkles , ArrowDown } from 'lucide-react';
 import { useScrollToBottom } from '@/hooks/use-scroll-to-bottom';
 import type { VisibilityType } from './visibility-selector';
-import { Tooltip } from 'react-tooltip';
 
 function PureMultimodalInput({
   chatId,
@@ -43,6 +42,8 @@ function PureMultimodalInput({
   handleSubmit,
   className,
   selectedVisibilityType,
+  shouldEnhancePrompt,
+  setShouldEnhancePrompt
 }: {
   chatId: string;
   input: UseChatHelpers['input'];
@@ -57,6 +58,8 @@ function PureMultimodalInput({
   handleSubmit: UseChatHelpers['handleSubmit'];
   className?: string;
   selectedVisibilityType: VisibilityType;
+  shouldEnhancePrompt: boolean;
+  setShouldEnhancePrompt: (value: boolean) => void;
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { width } = useWindowSize();
@@ -110,14 +113,18 @@ function PureMultimodalInput({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadQueue, setUploadQueue] = useState<Array<string>>([]);
 
+  // const [shouldEnhancePrompt, setShouldEnhancePrompt] = useState(false);
+
   const submitForm = useCallback(() => {
     window.history.replaceState({}, '', `/chat/${chatId}`);
 
     handleSubmit(undefined, {
       experimental_attachments: attachments,
+      // shouldEnhancePrompt: shouldEnhancePrompt
     });
 
     setAttachments([]);
+    setShouldEnhancePrompt(false);
     setLocalStorageInput('');
     resetHeight();
 
@@ -131,6 +138,8 @@ function PureMultimodalInput({
     setLocalStorageInput,
     width,
     chatId,
+    shouldEnhancePrompt,
+    setShouldEnhancePrompt
   ]);
 
   const uploadFile = async (file: File) => {
@@ -294,7 +303,13 @@ function PureMultimodalInput({
 
       <div className="absolute gap-3 bottom-0 p-2 w-fit flex flex-row justify-start">
         <AttachmentsButton fileInputRef={fileInputRef} status={status}/>
-        <EnhancePromptButton disabled={false}/>
+        <EnhancePromptButton
+          onEnhance={
+            () => setShouldEnhancePrompt(!shouldEnhancePrompt)
+          }
+          disabled={false}
+          active={shouldEnhancePrompt}
+        />
       </div>
 
       <div className="absolute bottom-0 right-0 p-2 w-fit flex flex-row justify-end">
@@ -320,8 +335,9 @@ export const MultimodalInput = memo(
     if (!equal(prevProps.attachments, nextProps.attachments)) return false;
     if (prevProps.selectedVisibilityType !== nextProps.selectedVisibilityType)
       return false;
+    return prevProps.shouldEnhancePrompt === nextProps.shouldEnhancePrompt;
 
-    return true;
+
   },
 );
 
@@ -351,11 +367,13 @@ function PureAttachmentsButton({
 const AttachmentsButton = memo(PureAttachmentsButton);
 
 function PureEnhancePromptButton({
-                                   // onEnhance,
+                                   onEnhance,
                                    disabled,
+                                   active,
                                  }: {
-  // onEnhance: () => void;
+  onEnhance: () => void;
   disabled: boolean;
+  active: boolean;
 }) {
   return (
     <motion.div
@@ -367,14 +385,15 @@ function PureEnhancePromptButton({
         data-testid="enhance-prompt-button"
         onClick={(event) => {
           event.preventDefault();
-          // onEnhance();
+          onEnhance();
         }}
         disabled={disabled}
         variant="ghost"
         className={`
           rounded-md rounded-bl-lg p-[7px] h-fit
-          text-purple-600 dark:text-purple-400
-          border border-purple-300 dark:border-purple-700
+          ${active
+          ? "bg-purple-200 dark:bg-purple-900 border-purple-600 text-purple-900 dark:text-purple-200"
+          : "text-purple-600 dark:text-purple-400 border border-purple-300 dark:border-purple-700"}
           hover:bg-purple-100 dark:hover:bg-zinc-900
           transition-all duration-200
           relative
@@ -390,7 +409,9 @@ function PureEnhancePromptButton({
   );
 }
 
-export const EnhancePromptButton = memo(PureEnhancePromptButton);
+export const EnhancePromptButton = memo(PureEnhancePromptButton, (prevProps, nextProps) => {
+  return prevProps.active === nextProps.active
+});
 
 function PureStopButton({
   stop,
