@@ -24,6 +24,22 @@ export class OpenRouterProvider extends BaseProvider {
       thinking: true,
     },
     {
+      id: "mistralai/devstral-small:free",
+      label: "Mistral: Devstral Small (free)",
+      provider: "OpenRouter",
+      description: "Mistral Small Model",
+      maxTokenAllowed: 8000,
+      thinking: true,
+    },
+    {
+      id: "google/gemma-3-27b-it:free",
+      label: "Google: Gemma 3 27B (free)",
+      provider: "OpenRouter",
+      description: "Google's open model",
+      maxTokenAllowed: 8000,
+      thinking: true,
+    },
+    {
       id: "meta-llama/llama-3.3-70b-instruct:free",
       label: "Meta: Llama 3.3 70B Instruct (free)",
       provider: "OpenRouter",

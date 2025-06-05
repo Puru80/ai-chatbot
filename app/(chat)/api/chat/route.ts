@@ -8,8 +8,8 @@ import {
   streamText,
   ToolExecutionError,
 } from "ai";
-import { auth, type UserType } from "@/app/(auth)/auth";
-import { type RequestHints, systemPrompt } from "@/lib/ai/prompts";
+import {auth, type UserType} from "@/app/(auth)/auth";
+import {type RequestHints, systemPrompt} from "@/lib/ai/prompts";
 import {
   createStreamId,
   deleteChatById,
@@ -20,25 +20,25 @@ import {
   saveChat,
   saveMessages,
 } from "@/lib/db/queries";
-import { generateUUID, getTrailingMessageId } from "@/lib/utils";
-import { generateTitleFromUserMessage } from "../../actions";
-import { createDocument } from "@/lib/ai/tools/create-document";
-import { updateDocument } from "@/lib/ai/tools/update-document";
-import { requestSuggestions } from "@/lib/ai/tools/request-suggestions";
-import { getWeather } from "@/lib/ai/tools/get-weather";
-import { isProductionEnvironment } from "@/lib/constants";
+import {generateUUID, getTrailingMessageId} from "@/lib/utils";
+import {generateTitleFromUserMessage, generateEnhancedPrompt} from "../../actions";
+import {createDocument} from "@/lib/ai/tools/create-document";
+import {updateDocument} from "@/lib/ai/tools/update-document";
+import {requestSuggestions} from "@/lib/ai/tools/request-suggestions";
+import {getWeather} from "@/lib/ai/tools/get-weather";
+import {isProductionEnvironment} from "@/lib/constants";
 // import { myProvider } from "@/lib/ai/providers";
-import { entitlementsByUserType } from "@/lib/ai/entitlements";
-import { postRequestBodySchema, type PostRequestBody } from "./schema";
-import { geolocation } from "@vercel/functions";
+import {entitlementsByUserType} from "@/lib/ai/entitlements";
+import {postRequestBodySchema, type PostRequestBody} from "./schema";
+import {geolocation} from "@vercel/functions";
 import {
   createResumableStreamContext,
   type ResumableStreamContext,
 } from "resumable-stream";
-import { after } from "next/server";
-import type { Chat } from "@/lib/db/schema";
-import { differenceInSeconds } from "date-fns";
-import { OpenRouterProvider } from "@/lib/ai/openrouter-provider";
+import {after} from "next/server";
+import type {Chat} from "@/lib/db/schema";
+import {differenceInSeconds} from "date-fns";
+import {OpenRouterProvider} from "@/lib/ai/openrouter-provider";
 
 export const maxDuration = 60;
 const openRouterProvider = new OpenRouterProvider();
@@ -69,30 +69,37 @@ export async function POST(request: Request) {
   console.log("POST /api/chat");
 
   let requestBody: PostRequestBody;
-  console.log("Request: ", request);
+  // console.log("Request: ", request);
 
   try {
     const json = await request.json();
-    console.log("Parsed JSON: ", json);
+    // console.log("Parsed JSON: ", json);
     requestBody = postRequestBodySchema.parse(json);
+    console.log('RequestBody: ', requestBody);
   } catch (e) {
     console.log("Error: ", e);
-    return new Response("Invalid request body", { status: 400 });
+    return new Response("Invalid request body", {status: 400});
   }
 
   try {
-    const { id, message, selectedChatModel, selectedVisibilityType } =
+    const {
+      id,
+      message,
+      selectedChatModel,
+      selectedVisibilityType,
+      shouldEnhancePrompt
+    } =
       requestBody;
 
     const session = await auth();
 
     if (!session?.user) {
-      return new Response("Unauthorized", { status: 401 });
+      return new Response("Unauthorized", {status: 401});
     }
 
     const userType: UserType = session.user.type;
 
-    if(userType === 'guest'){
+    if (userType === 'guest') {
       return Response.json({redirectToSignUp: true, prompt: requestBody.message});
     }
 
@@ -110,7 +117,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const chat = await getChatById({ id });
+    const chat = await getChatById({id});
 
     if (!chat) {
       const title = await generateTitleFromUserMessage({
@@ -126,11 +133,26 @@ export async function POST(request: Request) {
       });
     } else {
       if (chat.userId !== session.user.id) {
-        return new Response("Forbidden", { status: 403 });
+        return new Response("Forbidden", {status: 403});
       }
     }
 
-    const previousMessages = await getMessagesByChatId({ id });
+    let enhancedUserPrompt: string | undefined;
+    let enhancedSystemPrompt: string | undefined;
+    if(shouldEnhancePrompt){
+      const enhancedPrompt = await generateEnhancedPrompt({
+        message,
+        selectedChatModel
+      })
+
+      console.log("Enhanced Prompt: ", enhancedPrompt.userPrompt);
+      console.log("Enhanced System Prompt: ", enhancedPrompt.systemPrompt);
+
+      enhancedSystemPrompt = enhancedPrompt.systemPrompt;
+      enhancedUserPrompt = enhancedPrompt.userPrompt;
+    }
+
+    const previousMessages = await getMessagesByChatId({id});
 
     const messages = appendClientMessage({
       // @ts-expect-error: todo add type conversion from DBMessage[] to UIMessage[]
@@ -138,7 +160,7 @@ export async function POST(request: Request) {
       message,
     });
 
-    const { longitude, latitude, city, country } = geolocation(request);
+    const {longitude, latitude, city, country} = geolocation(request);
 
     const requestHints: RequestHints = {
       longitude,
@@ -161,16 +183,15 @@ export async function POST(request: Request) {
     });
 
     const streamId = generateUUID();
-    await createStreamId({ streamId, chatId: id });
-
-    console.log("Selected model:", selectedChatModel);
+    await createStreamId({streamId, chatId: id});
 
     const stream = createDataStream({
       execute: (dataStream) => {
         const result = streamText({
           model: openRouterProvider.getModelInstance({model: selectedChatModel}),
-          system: systemPrompt({ selectedChatModel, requestHints }),
-          messages,
+          system: enhancedSystemPrompt ? enhancedSystemPrompt : systemPrompt({selectedChatModel, requestHints}),
+          prompt: enhancedUserPrompt? enhancedUserPrompt: JSON.stringify(message),
+          // messages,
           maxSteps: 5,
           // experimental_activeTools:
           //   selectedChatModel === "chat-model-reasoning"
@@ -181,7 +202,7 @@ export async function POST(request: Request) {
           //         "updateDocument",
           //         "requestSuggestions",
           //       ],
-          experimental_transform: smoothStream({ chunking: "line" }),
+          experimental_transform: smoothStream({chunking: "line"}),
           experimental_generateMessageId: generateUUID,
           tools: {
             // getWeather,
@@ -192,7 +213,7 @@ export async function POST(request: Request) {
             //   dataStream,
             // }),
           },
-          onFinish: async ({ response }) => {
+          onFinish: async ({response}) => {
             if (session.user?.id) {
               try {
                 const assistantId = getTrailingMessageId({
@@ -274,52 +295,53 @@ export async function GET(request: Request) {
   const resumeRequestedAt = new Date();
 
   if (!streamContext) {
-    return new Response(null, { status: 204 });
+    return new Response(null, {status: 204});
   }
 
-  const { searchParams } = new URL(request.url);
+  const {searchParams} = new URL(request.url);
   const chatId = searchParams.get("chatId");
 
   if (!chatId) {
-    return new Response("id is required", { status: 400 });
+    return new Response("id is required", {status: 400});
   }
 
   const session = await auth();
 
   if (!session?.user) {
-    return new Response("Unauthorized", { status: 401 });
+    return new Response("Unauthorized", {status: 401});
   }
 
   let chat: Chat;
 
   try {
-    chat = await getChatById({ id: chatId });
+    chat = await getChatById({id: chatId});
   } catch {
-    return new Response("Not found", { status: 404 });
+    return new Response("Not found", {status: 404});
   }
 
   if (!chat) {
-    return new Response("Not found", { status: 404 });
+    return new Response("Not found", {status: 404});
   }
 
   if (chat.visibility === "private" && chat.userId !== session.user.id) {
-    return new Response("Forbidden", { status: 403 });
+    return new Response("Forbidden", {status: 403});
   }
 
-  const streamIds = await getStreamIdsByChatId({ chatId });
+  const streamIds = await getStreamIdsByChatId({chatId});
 
   if (!streamIds.length) {
-    return new Response("No streams found", { status: 404 });
+    return new Response("No streams found", {status: 404});
   }
 
   const recentStreamId = streamIds.at(-1);
 
   if (!recentStreamId) {
-    return new Response("No recent stream found", { status: 404 });
+    return new Response("No recent stream found", {status: 404});
   }
 
   const emptyDataStream = createDataStream({
-    execute: () => {},
+    execute: () => {
+    },
   });
 
   const stream = await streamContext.resumableStream(
@@ -332,21 +354,21 @@ export async function GET(request: Request) {
    * but the resumable stream has concluded at this point.
    */
   if (!stream) {
-    const messages = await getMessagesByChatId({ id: chatId });
+    const messages = await getMessagesByChatId({id: chatId});
     const mostRecentMessage = messages.at(-1);
 
     if (!mostRecentMessage) {
-      return new Response(emptyDataStream, { status: 200 });
+      return new Response(emptyDataStream, {status: 200});
     }
 
     if (mostRecentMessage.role !== "assistant") {
-      return new Response(emptyDataStream, { status: 200 });
+      return new Response(emptyDataStream, {status: 200});
     }
 
     const messageCreatedAt = new Date(mostRecentMessage.createdAt);
 
     if (differenceInSeconds(resumeRequestedAt, messageCreatedAt) > 15) {
-      return new Response(emptyDataStream, { status: 200 });
+      return new Response(emptyDataStream, {status: 200});
     }
 
     const restoredStream = createDataStream({
@@ -358,36 +380,36 @@ export async function GET(request: Request) {
       },
     });
 
-    return new Response(restoredStream, { status: 200 });
+    return new Response(restoredStream, {status: 200});
   }
 
-  return new Response(stream, { status: 200 });
+  return new Response(stream, {status: 200});
 }
 
 export async function DELETE(request: Request) {
-  const { searchParams } = new URL(request.url);
+  const {searchParams} = new URL(request.url);
   const id = searchParams.get("id");
 
   if (!id) {
-    return new Response("Not Found", { status: 404 });
+    return new Response("Not Found", {status: 404});
   }
 
   const session = await auth();
 
   if (!session?.user?.id) {
-    return new Response("Unauthorized", { status: 401 });
+    return new Response("Unauthorized", {status: 401});
   }
 
   try {
-    const chat = await getChatById({ id });
+    const chat = await getChatById({id});
 
     if (chat.userId !== session.user.id) {
-      return new Response("Forbidden", { status: 403 });
+      return new Response("Forbidden", {status: 403});
     }
 
-    const deletedChat = await deleteChatById({ id });
+    const deletedChat = await deleteChatById({id});
 
-    return Response.json(deletedChat, { status: 200 });
+    return Response.json(deletedChat, {status: 200});
   } catch (error) {
     console.error(error);
     return new Response("An error occurred while processing your request!", {
