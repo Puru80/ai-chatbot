@@ -7,7 +7,7 @@ import {DUMMY_PASSWORD} from "@/lib/constants";
 import type {DefaultJWT} from "next-auth/jwt";
 import GoogleProvider from "next-auth/providers/google";
 
-export type UserType = "guest" | "regular";
+export type UserType = "guest" | "regular" | "pro";
 
 declare module "next-auth" {
   interface Session extends DefaultSession {

@@ -24,6 +24,10 @@ export const entitlementsByUserType: Record<UserType, Entitlements> = {
   },
 
   /*
-   * TODO: For users with an account and a paid membership
+   * For users with an account and a paid membership
    */
+  pro: {
+    maxMessagesPerDay: 50,
+    availableChatModelIds: chatModels.map(item => item.id),
+  },
 };
