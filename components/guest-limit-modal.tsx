@@ -41,7 +41,7 @@ export function GuestLimitModal({
               Continue Chatting
             </h2>
             <p className="text-zinc-600 dark:text-zinc-400 mb-6 text-sm">
-              You’ve hit the guest message limit. Please sign up or log in to keep chatting.
+              Please sign up or log in to keep chatting.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4">
