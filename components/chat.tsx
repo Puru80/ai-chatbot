@@ -45,6 +45,8 @@ export function Chat({
     initialVisibilityType,
   });
 
+  const [shouldEnhancePrompt, setShouldEnhancePrompt] = useState(false);
+
   const {
     messages,
     setMessages,
@@ -68,6 +70,7 @@ export function Chat({
       message: body.messages.at(-1),
       selectedChatModel: initialChatModel,
       selectedVisibilityType: visibilityType,
+      shouldEnhancePrompt: shouldEnhancePrompt
     }),
     onFinish: () => {
       mutate(unstable_serialize(getChatHistoryPaginationKey));
@@ -180,6 +183,8 @@ export function Chat({
               setMessages={setMessages}
               append={append}
               selectedVisibilityType={visibilityType}
+              shouldEnhancePrompt={shouldEnhancePrompt}
+              setShouldEnhancePrompt={setShouldEnhancePrompt}
             />
           )}
         </form>

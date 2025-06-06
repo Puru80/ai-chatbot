@@ -39,6 +39,45 @@ export async function generateTitleFromUserMessage({
   return title;
 }
 
+export async function generateEnhancedPrompt({
+  message,
+  selectedChatModel
+}: {
+  message: UIMessage;
+  selectedChatModel: string
+}) {
+  console.log("Message Content: ", message.content);
+  const { text: prompt } = await generateText({
+    model: openRouterProvider.getModelInstance({model: "mistralai/devstral-small:free"}),
+    system: `\n
+    You are a world-class prompt engineer, expert in prompt transformation and enhancement for large language models. Your job is to take raw, unclear, vague, or under-specified prompts and convert them into highly effective, well-scoped, unambiguous, and goal-directed prompts suitable for use with state-of-the-art LLMs.
+
+    Always ask yourself:
+    - What is the user’s true intent?
+    - Is the task clear and precise?
+    - Does the prompt include context, constraints, desired format, and role if needed?
+    
+    Enhance the user’s prompt by:
+    - Rewriting it in a clearer, more effective format.
+    - Filling in missing but obvious intent or context.
+    - Adding role instructions, format requirements, and examples where appropriate.
+    - Making it specific while preserving flexibility when necessary.
+    
+    In addition to improving the user prompt, also generate a general system prompt that would help guide an LLM to respond effectively to the enhanced task.
+
+    Return your output strictly in the following JSON format:
+    {
+      userPrompt: "enhanced version of the user's original prompt",
+      systemPrompt: "well-written system prompt that sets the role, intent, and constraints for the AI"
+    }
+
+    Focus on clarity, specificity, context, and desired tone or structure. Do not include any explanations or comments outside the JSON object.`,
+    prompt: message.content
+  });
+
+  return JSON.parse(prompt);
+}
+
 export async function deleteTrailingMessages({ id }: { id: string }) {
   const [message] = await getMessageById({ id });
 
