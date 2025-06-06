@@ -141,8 +141,7 @@ export async function POST(request: Request) {
     let enhancedSystemPrompt: string | undefined;
     if(shouldEnhancePrompt){
       const enhancedPrompt = await generateEnhancedPrompt({
-        message,
-        selectedChatModel
+        message
       })
 
       console.log("Enhanced Prompt: ", enhancedPrompt.userPrompt);

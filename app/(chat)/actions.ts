@@ -40,15 +40,13 @@ export async function generateTitleFromUserMessage({
 }
 
 export async function generateEnhancedPrompt({
-  message,
-  selectedChatModel
+  message
 }: {
   message: UIMessage;
-  selectedChatModel: string
 }) {
   console.log("Message Content: ", message.content);
   const { text: prompt } = await generateText({
-    model: openRouterProvider.getModelInstance({model: "mistralai/devstral-small:free"}),
+    model: openRouterProvider.getModelInstance({model: "google/gemma-3-27b-it:free"}),
     system: `\n
     You are a world-class prompt engineer, expert in prompt transformation and enhancement for large language models. Your job is to take raw, unclear, vague, or under-specified prompts and convert them into highly effective, well-scoped, unambiguous, and goal-directed prompts suitable for use with state-of-the-art LLMs.
 
