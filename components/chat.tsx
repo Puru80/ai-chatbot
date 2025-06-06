@@ -206,6 +206,8 @@ export function Chat({
         votes={votes}
         isReadonly={isReadonly}
         selectedVisibilityType={visibilityType}
+        shouldEnhancePrompt={shouldEnhancePrompt}
+        setShouldEnhancePrompt={setShouldEnhancePrompt}
       />
 
       <GuestLimitModal

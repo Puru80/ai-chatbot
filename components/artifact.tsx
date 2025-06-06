@@ -68,6 +68,8 @@ function PureArtifact({
   votes,
   isReadonly,
   selectedVisibilityType,
+  shouldEnhancePrompt,
+  setShouldEnhancePrompt
 }: {
   chatId: string;
   input: string;
@@ -84,6 +86,8 @@ function PureArtifact({
   reload: UseChatHelpers['reload'];
   isReadonly: boolean;
   selectedVisibilityType: VisibilityType;
+  shouldEnhancePrompt: boolean;
+  setShouldEnhancePrompt: (value: boolean) => void;
 }) {
   const { artifact, setArtifact, metadata, setMetadata } = useArtifact();
 
@@ -339,6 +343,8 @@ function PureArtifact({
                     className="bg-background dark:bg-muted"
                     setMessages={setMessages}
                     selectedVisibilityType={selectedVisibilityType}
+                    shouldEnhancePrompt={shouldEnhancePrompt}
+                    setShouldEnhancePrompt={setShouldEnhancePrompt}
                   />
                 </form>
               </div>

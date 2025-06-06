@@ -120,7 +120,6 @@ function PureMultimodalInput({
 
     handleSubmit(undefined, {
       experimental_attachments: attachments,
-      // shouldEnhancePrompt: shouldEnhancePrompt
     });
 
     setAttachments([]);
