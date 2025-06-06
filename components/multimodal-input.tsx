@@ -400,9 +400,9 @@ function PureEnhancePromptButton({
       >
         <Sparkles className="size-4 mr-1 animate-pulse text-purple-500" />
         <span className="text-xs font-medium">Enhance</span>
-        <span className="absolute -top-3 -right-1 text-[10px] bg-yellow-400 text-black px-1 rounded shadow-sm">
-          Pro
-        </span>
+        {/*<span className="absolute -top-3 -right-1 text-[10px] bg-yellow-400 text-black px-1 rounded shadow-sm">*/}
+        {/*  Pro*/}
+        {/*</span>*/}
       </Button>
     </motion.div>
   );
