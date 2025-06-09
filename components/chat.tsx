@@ -209,6 +209,7 @@ export function Chat({
         selectedVisibilityType={visibilityType}
         shouldEnhancePrompt={shouldEnhancePrompt}
         setShouldEnhancePrompt={setShouldEnhancePrompt}
+        isGuest={isGuest}
       />
 
       <GuestLimitModal
