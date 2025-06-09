@@ -13,6 +13,12 @@ export function GuestLimitModal({
 }) {
   const router = useRouter();
 
+  const handleAuthNavigation = (path: string) => {
+    // Remove chatId from localStorage after navigation
+    onClose();
+    router.push(path);
+  };
+
   return (
     <AnimatePresence>
       {open && (
@@ -34,7 +40,7 @@ export function GuestLimitModal({
               onClick={onClose}
               aria-label="Close"
             >
-              <X className="w-5 h-5" />
+              <X className="size-5" />
             </button>
 
             <h2 className="text-xl font-semibold text-zinc-800 dark:text-zinc-100 mb-3">
@@ -47,13 +53,19 @@ export function GuestLimitModal({
             <div className="flex flex-col sm:flex-row gap-4">
               <button
                 className="flex-1 bg-indigo-600 text-white py-2.5 rounded-lg font-medium hover:bg-indigo-700 transition-colors"
-                onClick={() => router.push('/register')}
+                onClick={(event) => {
+                  event.preventDefault();
+                  handleAuthNavigation('/register')
+                }}
               >
                 Sign Up
               </button>
               <button
                 className="flex-1 bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-100 py-2.5 rounded-lg font-medium hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
-                onClick={() => router.push('/login')}
+                onClick={(event) => {
+                  event.preventDefault();
+                  handleAuthNavigation('/login')
+                }}
               >
                 Log In
               </button>

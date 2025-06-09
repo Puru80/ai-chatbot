@@ -1,35 +1,35 @@
 'use client';
 
-import type { Attachment, UIMessage } from 'ai';
-import { GuestLimitModal } from './guest-limit-modal';
-import { useChat } from '@ai-sdk/react';
-import { useEffect, useState } from 'react';
-import useSWR, { useSWRConfig } from 'swr';
-import { ChatHeader } from '@/components/chat-header';
-import type { Vote } from '@/lib/db/schema';
-import { fetcher, generateUUID } from '@/lib/utils';
-import { Artifact } from './artifact';
-import { MultimodalInput } from './multimodal-input';
-import { Messages } from './messages';
-import type { VisibilityType } from './visibility-selector';
-import { useArtifactSelector } from '@/hooks/use-artifact';
-import { unstable_serialize } from 'swr/infinite';
-import { getChatHistoryPaginationKey } from './sidebar-history';
-import { toast } from './toast';
-import type { Session } from 'next-auth';
-import { useSearchParams } from 'next/navigation';
-import { useChatVisibility } from '@/hooks/use-chat-visibility';
-import { useAutoResume } from '@/hooks/use-auto-resume';
+import type {Attachment, UIMessage} from 'ai';
+import {GuestLimitModal} from './guest-limit-modal';
+import {useChat} from '@ai-sdk/react';
+import {useEffect, useState} from 'react';
+import useSWR, {useSWRConfig} from 'swr';
+import {ChatHeader} from '@/components/chat-header';
+import type {Vote} from '@/lib/db/schema';
+import {fetcher, generateUUID} from '@/lib/utils';
+import {Artifact} from './artifact';
+import {MultimodalInput} from './multimodal-input';
+import {Messages} from './messages';
+import type {VisibilityType} from './visibility-selector';
+import {useArtifactSelector} from '@/hooks/use-artifact';
+import {unstable_serialize} from 'swr/infinite';
+import {getChatHistoryPaginationKey} from './sidebar-history';
+import {toast} from './toast';
+import type {Session} from 'next-auth';
+import {useSearchParams} from 'next/navigation';
+import {useChatVisibility} from '@/hooks/use-chat-visibility';
+import {useAutoResume} from '@/hooks/use-auto-resume';
 
 export function Chat({
-  id,
-  initialMessages,
-  initialChatModel,
-  initialVisibilityType,
-  isReadonly,
-  session,
-  autoResume,
-}: {
+                       id,
+                       initialMessages,
+                       initialChatModel,
+                       initialVisibilityType,
+                       isReadonly,
+                       session,
+                       autoResume,
+                     }: {
   id: string;
   initialMessages: Array<UIMessage>;
   initialChatModel: string;
@@ -38,9 +38,9 @@ export function Chat({
   session: Session;
   autoResume: boolean;
 }) {
-  const { mutate } = useSWRConfig();
+  const {mutate} = useSWRConfig();
 
-  const { visibilityType } = useChatVisibility({
+  const {visibilityType} = useChatVisibility({
     chatId: id,
     initialVisibilityType,
   });
@@ -100,7 +100,7 @@ export function Chat({
     }
   }, [query, append, hasAppendedQuery, id]);
 
-  const { data: votes } = useSWR<Array<Vote>>(
+  const {data: votes} = useSWR<Array<Vote>>(
     messages.length >= 2 ? `/api/vote?chatId=${id}` : null,
     fetcher,
   );
@@ -185,6 +185,7 @@ export function Chat({
               selectedVisibilityType={visibilityType}
               shouldEnhancePrompt={shouldEnhancePrompt}
               setShouldEnhancePrompt={setShouldEnhancePrompt}
+              isGuest={isGuest}
             />
           )}
         </form>
@@ -212,7 +213,8 @@ export function Chat({
 
       <GuestLimitModal
         open={showGuestModal}
-        onClose={() => setShowGuestModal(false)}/>
+        onClose={() => setShowGuestModal(false)}
+      />
     </>
   );
 }
