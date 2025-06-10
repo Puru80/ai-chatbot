@@ -251,6 +251,7 @@ export const PreviewMessage = memo(
     if (prevProps.requiresScrollPadding !== nextProps.requiresScrollPadding)
       return false;
     if (!equal(prevProps.message.parts, nextProps.message.parts)) return false;
+    if (prevProps.message.modelId !== nextProps.message.modelId) return false;
     if (!equal(prevProps.vote, nextProps.vote)) return false;
 
     return true;
