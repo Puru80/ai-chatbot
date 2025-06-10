@@ -177,6 +177,7 @@ export async function POST(request: Request) {
           parts: message.parts,
           attachments: message.experimental_attachments ?? [],
           createdAt: new Date(),
+          modelId: null
         },
       ],
     });
