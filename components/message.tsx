@@ -1,7 +1,6 @@
 'use client';
 
 import type { AppMessage } from '@/app/types/model';
-import type { UIMessage } from 'ai';
 import cx from 'classnames';
 import { AnimatePresence, motion } from 'framer-motion';
 import { memo, useState } from 'react';
