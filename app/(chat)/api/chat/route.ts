@@ -39,9 +39,11 @@ import {after} from "next/server";
 import type {Chat} from "@/lib/db/schema";
 import {differenceInSeconds} from "date-fns";
 import {OpenRouterProvider} from "@/lib/ai/openrouter-provider";
+import {LLMManager} from "@/lib/ai/manager";
 
 export const maxDuration = 60;
 const openRouterProvider = new OpenRouterProvider();
+const llmManager = LLMManager.getInstance();
 
 let globalStreamContext: ResumableStreamContext | null = null;
 
@@ -241,7 +243,7 @@ export async function POST(request: Request) {
                       attachments:
                         assistantMessage.experimental_attachments ?? [],
                       createdAt: new Date(),
-                      modelId: selectedChatModel,
+                      modelId: llmManager.getModelNameById(selectedChatModel),
                     },
                   ],
                 });
