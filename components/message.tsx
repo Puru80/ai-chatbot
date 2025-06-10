@@ -1,5 +1,6 @@
 'use client';
 
+import type { AppMessage } from '@/app/types/model';
 import type { UIMessage } from 'ai';
 import cx from 'classnames';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -31,7 +32,7 @@ const PurePreviewMessage = ({
   requiresScrollPadding,
 }: {
   chatId: string;
-  message: UIMessage;
+  message: AppMessage;
   vote: Vote | undefined;
   isLoading: boolean;
   setMessages: UseChatHelpers['setMessages'];
@@ -131,6 +132,11 @@ const PurePreviewMessage = ({
                         })}
                       >
                         <Markdown>{sanitizeText(part.text)}</Markdown>
+                        {message.role === 'assistant' && message.modelId && (
+                          <small className="text-xs text-muted-foreground mt-1">
+                            Model: {message.modelId}
+                          </small>
+                        )}
                       </div>
                     </div>
                   );
@@ -245,6 +251,7 @@ export const PreviewMessage = memo(
     if (prevProps.requiresScrollPadding !== nextProps.requiresScrollPadding)
       return false;
     if (!equal(prevProps.message.parts, nextProps.message.parts)) return false;
+    if (prevProps.message.modelId !== nextProps.message.modelId) return false;
     if (!equal(prevProps.vote, nextProps.vote)) return false;
 
     return true;

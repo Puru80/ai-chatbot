@@ -1,4 +1,5 @@
 import type { ModelInfo } from '../../lib/ai/types';
+import type { UIMessage } from 'ai';
 
 export type ProviderInfo = {
   staticModels: ModelInfo[];
@@ -21,4 +22,8 @@ export interface IProviderSetting {
 
 export type IProviderConfig = ProviderInfo & {
   settings: IProviderSetting;
+};
+
+export type AppMessage = UIMessage & {
+  modelId?: string;
 };

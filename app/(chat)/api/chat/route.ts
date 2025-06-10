@@ -39,9 +39,11 @@ import {after} from "next/server";
 import type {Chat} from "@/lib/db/schema";
 import {differenceInSeconds} from "date-fns";
 import {OpenRouterProvider} from "@/lib/ai/openrouter-provider";
+import {LLMManager} from "@/lib/ai/manager";
 
 export const maxDuration = 60;
 const openRouterProvider = new OpenRouterProvider();
+const llmManager = LLMManager.getInstance();
 
 let globalStreamContext: ResumableStreamContext | null = null;
 
@@ -177,12 +179,15 @@ export async function POST(request: Request) {
           parts: message.parts,
           attachments: message.experimental_attachments ?? [],
           createdAt: new Date(),
+          modelId: null
         },
       ],
     });
 
     const streamId = generateUUID();
     await createStreamId({streamId, chatId: id});
+
+    const modelName = llmManager.getModelNameById(selectedChatModel);
 
     const stream = createDataStream({
       execute: (dataStream) => {
@@ -225,6 +230,9 @@ export async function POST(request: Request) {
                   throw new Error("No assistant message found!");
                 }
 
+                console.log("onFinish: message", messages);
+                console.log("onFinish: response", response.messages);
+
                 const [, assistantMessage] = appendResponseMessages({
                   messages: [message],
                   responseMessages: response.messages,
@@ -240,6 +248,7 @@ export async function POST(request: Request) {
                       attachments:
                         assistantMessage.experimental_attachments ?? [],
                       createdAt: new Date(),
+                      modelId: llmManager.getModelNameById(selectedChatModel),
                     },
                   ],
                 });

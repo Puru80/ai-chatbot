@@ -1,5 +1,6 @@
 'use client';
 
+import type { AppMessage } from '@/app/types/model';
 import type {Attachment, UIMessage} from 'ai';
 import {GuestLimitModal} from './guest-limit-modal';
 import {useChat} from '@ai-sdk/react';
@@ -31,7 +32,7 @@ export function Chat({
                        autoResume,
                      }: {
   id: string;
-  initialMessages: Array<UIMessage>;
+  initialMessages: Array<AppMessage>;
   initialChatModel: string;
   initialVisibilityType: VisibilityType;
   isReadonly: boolean;
@@ -72,7 +73,17 @@ export function Chat({
       selectedVisibilityType: visibilityType,
       shouldEnhancePrompt: shouldEnhancePrompt
     }),
-    onFinish: () => {
+    onFinish: (assistantMessage) => {
+      // The assistantMessage is the final message object from the AI SDK
+      // It should be an AppMessage, but let's ensure we cast it or treat it as such
+      // when adding our custom field.
+
+      setMessages(currentMessages => currentMessages.map(msg =>
+        msg.id === assistantMessage.id
+          ? { ...msg, modelId: initialChatModel }
+          : msg
+      ));
+
       mutate(unstable_serialize(getChatHistoryPaginationKey));
     },
     onError: (error) => {
