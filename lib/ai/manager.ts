@@ -68,13 +68,4 @@ export class LLMManager {
     return this._modelList;
   }
 
-  getModelNameById(modelId: string): string {
-    // Fetch model name by ID
-    const model = this._modelList.find((m) => m.id === modelId);
-    if (model) {
-      return model.label;
-    }
-    return '';
-  }
-
 }
