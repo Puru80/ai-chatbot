@@ -187,6 +187,8 @@ export async function POST(request: Request) {
     const streamId = generateUUID();
     await createStreamId({streamId, chatId: id});
 
+    const modelName = llmManager.getModelNameById(selectedChatModel);
+
     const stream = createDataStream({
       execute: (dataStream) => {
         const result = streamText({
@@ -227,6 +229,9 @@ export async function POST(request: Request) {
                 if (!assistantId) {
                   throw new Error("No assistant message found!");
                 }
+
+                console.log("onFinish: message", messages);
+                console.log("onFinish: response", response.messages);
 
                 const [, assistantMessage] = appendResponseMessages({
                   messages: [message],

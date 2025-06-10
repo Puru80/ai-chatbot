@@ -41,7 +41,6 @@ const PurePreviewMessage = ({
   requiresScrollPadding: boolean;
 }) => {
   const [mode, setMode] = useState<'view' | 'edit'>('view');
-  console.log("Messages: ", message);
 
   return (
     <AnimatePresence>

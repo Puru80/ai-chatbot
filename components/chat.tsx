@@ -48,8 +48,6 @@ export function Chat({
 
   const [shouldEnhancePrompt, setShouldEnhancePrompt] = useState(false);
 
-  console.log(initialMessages);
-
   const {
     messages,
     setMessages,
