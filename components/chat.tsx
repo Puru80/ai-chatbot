@@ -73,18 +73,7 @@ export function Chat({
       selectedVisibilityType: visibilityType,
       shouldEnhancePrompt: shouldEnhancePrompt
     }),
-    onFinish: (assistantMessage) => {
-      // The assistantMessage is the final message object from the AI SDK
-      // It should be an AppMessage, but let's ensure we cast it or treat it as such
-      // when adding our custom field.
-
-      setMessages(currentMessages => currentMessages.map(msg =>
-        msg.id === assistantMessage.id
-          ? { ...msg, modelId: initialChatModel }
-          : msg
-      ));
-
-      // Original SWR mutation can still be here
+    onFinish: () => {
       mutate(unstable_serialize(getChatHistoryPaginationKey));
     },
     onError: (error) => {
