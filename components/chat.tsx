@@ -1,5 +1,6 @@
 'use client';
 
+import type { AppMessage } from '@/app/types/model';
 import type {Attachment, UIMessage} from 'ai';
 import {GuestLimitModal} from './guest-limit-modal';
 import {useChat} from '@ai-sdk/react';
@@ -31,7 +32,7 @@ export function Chat({
                        autoResume,
                      }: {
   id: string;
-  initialMessages: Array<UIMessage>;
+  initialMessages: Array<AppMessage>;
   initialChatModel: string;
   initialVisibilityType: VisibilityType;
   isReadonly: boolean;

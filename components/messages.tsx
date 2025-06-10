@@ -1,4 +1,4 @@
-import type { UIMessage } from 'ai';
+import type { AppMessage } from '@/app/types/model';
 import { PreviewMessage, ThinkingMessage } from './message';
 import { Greeting } from './greeting';
 import { memo } from 'react';
@@ -12,7 +12,7 @@ interface MessagesProps {
   chatId: string;
   status: UseChatHelpers['status'];
   votes: Array<Vote> | undefined;
-  messages: Array<UIMessage>;
+  messages: Array<AppMessage>;
   setMessages: UseChatHelpers['setMessages'];
   reload: UseChatHelpers['reload'];
   isReadonly: boolean;
