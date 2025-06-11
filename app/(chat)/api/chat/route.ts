@@ -5,8 +5,15 @@ import {
   InvalidToolArgumentsError,
   NoSuchToolError,
   smoothStream,
+  appendClientMessage,
+  appendResponseMessages,
+  createDataStream,
+  InvalidToolArgumentsError,
+  NoSuchToolError,
+  smoothStream,
   streamText,
   ToolExecutionError,
+  type CoreMessage, // Added CoreMessage
 } from "ai";
 import {auth, type UserType} from "@/app/(auth)/auth";
 import {type RequestHints, systemPrompt} from "@/lib/ai/prompts";
@@ -17,6 +24,7 @@ import {
   getMessageCountByUserId,
   getMessagesByChatId,
   getStreamIdsByChatId,
+  getUserPersonality, // Added getUserPersonality
   saveChat,
   saveMessages,
 } from "@/lib/db/queries";
@@ -45,6 +53,8 @@ export const maxDuration = 60;
 const openRouterProvider = new OpenRouterProvider();
 const llmManager = LLMManager.getInstance();
 
+const CONTEXT_TOKEN_BUDGET = 3000; // Added token budget
+
 let globalStreamContext: ResumableStreamContext | null = null;
 
 function getStreamContext() {
@@ -65,6 +75,70 @@ function getStreamContext() {
   }
 
   return globalStreamContext;
+}
+
+// Helper to estimate token count (simple heuristic)
+function estimateTokens(text: string): number {
+  return Math.ceil(text.length / 4);
+}
+
+// Define DBMessage type based on usage, assuming parts is an array of text objects
+// This is an approximation; ideally, it would be imported or defined more concretely.
+interface DBMessagePart {
+  type: 'text' | string; // Assuming 'text' is one type, but could be others
+  text: string;
+  // Potentially other fields like 'mimeType' for non-text parts
+}
+
+interface DBMessage {
+  id: string;
+  role: 'user' | 'assistant' | 'system'; // Or other roles if they exist in DB
+  parts: DBMessagePart[];
+  createdAt: Date | string; // Assuming it could be Date object or string
+  // Other fields like chatId, modelId etc. might exist but are not needed for CoreMessage conversion
+}
+
+// Helper to convert DBMessage[] to CoreMessage[]
+function mapDbMessagesToCoreMessages(dbMessages: DBMessage[]): CoreMessage[] {
+  return dbMessages.map(dbMsg => ({
+    id: dbMsg.id,
+    role: dbMsg.role as 'user' | 'assistant' | 'system', // Ensure role compatibility
+    content: dbMsg.parts
+      .filter(part => part.type === 'text' && typeof part.text === 'string') // Filter for text parts
+      .map(part => part.text)
+      .join('\n'), // Concatenate text parts
+  }));
+}
+
+// Updated truncateConversationHistory function
+async function truncateConversationHistory(
+  allMessages: CoreMessage[], // Chronological order (oldest to newest)
+  systemPromptString: string,
+  tokenBudget: number
+): Promise<CoreMessage[]> {
+  const systemPromptTokens = estimateTokens(systemPromptString);
+  let remainingBudgetForHistory = tokenBudget - systemPromptTokens;
+
+  if (remainingBudgetForHistory <= 0) {
+    return []; // No budget left for messages
+  }
+
+  const truncatedMessages: CoreMessage[] = [];
+  // Iterate from newest to oldest
+  for (let i = allMessages.length - 1; i >= 0; i--) {
+    const message = allMessages[i];
+    const messageTokens = estimateTokens(message.content);
+
+    if (remainingBudgetForHistory - messageTokens >= 0) {
+      truncatedMessages.push(message);
+      remainingBudgetForHistory -= messageTokens;
+    } else {
+      // Optional: if we want to allow partial messages or a summary
+      // For now, we just stop including messages once budget is hit.
+      break;
+    }
+  }
+  return truncatedMessages.reverse(); // Restore chronological order
 }
 
 export async function POST(request: Request) {
@@ -97,6 +171,8 @@ export async function POST(request: Request) {
     if (!session?.user) {
       return new Response("Unauthorized", {status: 401});
     }
+
+    const userPersonalityContext = await getUserPersonality(session.user.id);
 
     const userType: UserType = session.user.type;
 
@@ -152,13 +228,19 @@ export async function POST(request: Request) {
       enhancedUserPrompt = enhancedPrompt.userPrompt;
     }
 
-    const previousMessages = await getMessagesByChatId({id});
+    const dbPreviousMessages = await getMessagesByChatId({id});
+    // Convert DB messages to CoreMessages
+    // Assuming getMessagesByChatId returns something compatible with DBMessage[]
+    const previousCoreMessages: CoreMessage[] = mapDbMessagesToCoreMessages(dbPreviousMessages as DBMessage[]);
 
-    const messages = appendClientMessage({
-      // @ts-expect-error: todo add type conversion from DBMessage[] to UIMessage[]
-      messages: previousMessages,
-      message,
-    });
+    // Convert the new user message (UIMessage from 'ai') to CoreMessage
+    const currentUserCoreMessage: CoreMessage = {
+      id: message.id, // from requestBody.message (UIMessage)
+      role: message.role as 'user', // from requestBody.message
+      content: message.parts.map(p => typeof p === 'string' ? p : p.text).join('\n'), // Handle UIMessagePart
+    };
+
+    const allCoreMessages: CoreMessage[] = [...previousCoreMessages, currentUserCoreMessage];
 
     const {longitude, latitude, city, country} = geolocation(request);
 
@@ -168,6 +250,22 @@ export async function POST(request: Request) {
       city,
       country,
     };
+
+    // Prepare system prompt with personality
+    let baseSystemPrompt = systemPrompt({selectedChatModel, requestHints});
+    if (enhancedSystemPrompt) { // If using enhanced prompt, that takes precedence
+        baseSystemPrompt = enhancedSystemPrompt;
+    }
+    const finalSystemPrompt = userPersonalityContext
+        ? userPersonalityContext + "\n\n" + baseSystemPrompt
+        : baseSystemPrompt;
+
+    // Call truncation function
+    const curatedMessages = await truncateConversationHistory(
+        allCoreMessages,
+        finalSystemPrompt, // This already includes personality
+        CONTEXT_TOKEN_BUDGET
+    );
 
     await saveMessages({
       messages: [
@@ -192,9 +290,8 @@ export async function POST(request: Request) {
       execute: (dataStream) => {
         const result = streamText({
           model: openRouterProvider.getModelInstance({model: selectedChatModel}),
-          system: enhancedSystemPrompt ? enhancedSystemPrompt : systemPrompt({selectedChatModel, requestHints}),
-          prompt: enhancedUserPrompt? enhancedUserPrompt: JSON.stringify(message),
-          // messages,
+          system: finalSystemPrompt, // This contains base system prompt + geo hints + user personality
+          messages: curatedMessages, // These are the user/assistant messages, truncated
           maxSteps: 5,
           // experimental_activeTools:
           //   selectedChatModel === "chat-model-reasoning"
