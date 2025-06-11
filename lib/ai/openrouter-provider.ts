@@ -16,10 +16,10 @@ export class OpenRouterProvider extends BaseProvider {
 
   staticModels: ModelInfo[] = [
     {
-      id: "qwen/qwq-32b:free",
-      label: "Qwen: QwQ 32B (free)",
+      id: "qwen/qwen3-14b:free",
+      label: "Qwen: Qwen3 14B (free)",
       provider: "OpenRouter",
-      description: "Reasoning Model",
+      description: "Dense 14.8B parameter causal language model",
       maxTokenAllowed: 8000,
       thinking: true,
     },
