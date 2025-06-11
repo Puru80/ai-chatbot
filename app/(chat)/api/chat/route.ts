@@ -71,7 +71,6 @@ export async function POST(request: Request) {
   console.log("POST /api/chat");
 
   let requestBody: PostRequestBody;
-  // console.log("Request: ", request);
 
   try {
     const json = await request.json();
@@ -146,8 +145,8 @@ export async function POST(request: Request) {
         message
       })
 
-      console.log("Enhanced Prompt: ", enhancedPrompt.userPrompt);
-      console.log("Enhanced System Prompt: ", enhancedPrompt.systemPrompt);
+      console.log("Enhanced Prompt: ", enhancedPrompt.user_prompt);
+      console.log("Enhanced System Prompt: ", enhancedPrompt.system_prompt);
 
       enhancedSystemPrompt = enhancedPrompt.systemPrompt;
       enhancedUserPrompt = enhancedPrompt.userPrompt;
@@ -229,9 +228,6 @@ export async function POST(request: Request) {
                 if (!assistantId) {
                   throw new Error("No assistant message found!");
                 }
-
-                console.log("onFinish: message", messages);
-                console.log("onFinish: response", response.messages);
 
                 const [, assistantMessage] = appendResponseMessages({
                   messages: [message],

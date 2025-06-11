@@ -45,8 +45,8 @@ export async function generateEnhancedPrompt({
   message: UIMessage;
 }) {
   console.log("Message Content: ", message.content);
-  const { text: prompt } = await generateText({
-    model: openRouterProvider.getModelInstance({model: "google/gemma-3-27b-it:free"}),
+  const {text: prompt} = await generateText({
+    model: openRouterProvider.getModelInstance({model: "meta-llama/llama-4-scout:free"}),
     system: `\n
     You are a world-class prompt engineer, expert in prompt transformation and enhancement for large language models. Your job is to take raw, unclear, vague, or under-specified prompts and convert them into highly effective, well-scoped, unambiguous, and goal-directed prompts suitable for use with state-of-the-art LLMs.
 
@@ -62,16 +62,21 @@ export async function generateEnhancedPrompt({
     - Making it specific while preserving flexibility when necessary.
     
     In addition to improving the user prompt, also generate a general system prompt that would help guide an LLM to respond effectively to the enhanced task.
-
-    Return your output strictly in the following JSON format:
-    {
-      userPrompt: "enhanced version of the user's original prompt",
-      systemPrompt: "well-written system prompt that sets the role, intent, and constraints for the AI"
-    }
+    
+    **Output your result strictly in valid JSON.**
+    
+    **Return the response only int the following, no trailing '\`' please:**
+    
+    **{**
+      **"user_prompt": "enhanced version of the user's original prompt with all internal quotes escaped and no trailing commas",**
+      **"system_prompt": "system prompt for the AI, also escaped properly and free of line breaks or invalid characters"**
+    **}**
 
     Focus on clarity, specificity, context, and desired tone or structure. Do not include any explanations or comments outside the JSON object.`,
     prompt: message.content
-  });
+  })
+
+  console.log("Enhanced Prompt: ", prompt);
 
   return JSON.parse(prompt);
 }
