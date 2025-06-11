@@ -21,6 +21,7 @@ import type {Session} from 'next-auth';
 import {useSearchParams} from 'next/navigation';
 import {useChatVisibility} from '@/hooks/use-chat-visibility';
 import {useAutoResume} from '@/hooks/use-auto-resume';
+import {LLMManager} from "@/lib/ai/manager";
 
 export function Chat({
                        id,
@@ -80,7 +81,7 @@ export function Chat({
 
       setMessages(currentMessages => currentMessages.map(msg =>
         msg.id === assistantMessage.id
-          ? { ...msg, modelId: initialChatModel }
+          ? { ...msg, modelId: LLMManager.getInstance().getModelNameById(initialChatModel) }
           : msg
       ));
 

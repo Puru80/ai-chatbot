@@ -133,7 +133,7 @@ const PurePreviewMessage = ({
                         <Markdown>{sanitizeText(part.text)}</Markdown>
                         {message.role === 'assistant' && message.modelId && (
                           <small className="text-xs italic text-muted-foreground mt-1 block">
-                            Model: <span className="font-medium">{message.modelId}</span>
+                            <span className="font-medium">{message.modelId}</span>
                           </small>
                         )}
                       </div>
