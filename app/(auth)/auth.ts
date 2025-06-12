@@ -1,11 +1,12 @@
 import {compare} from "bcrypt-ts";
 import NextAuth, {type DefaultSession} from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import {createGuestUser, createUser, getUser} from "@/lib/db/queries";
+import {createGuestUser, createUser, getUser, getUserPromptDetails} from "@/lib/db/queries";
 import {authConfig} from "./auth.config";
 import {DUMMY_PASSWORD} from "@/lib/constants";
 import type {DefaultJWT} from "next-auth/jwt";
 import GoogleProvider from "next-auth/providers/google";
+import { entitlementsByUserType } from "@/lib/ai/entitlements";
 
 export type UserType = "guest" | "regular" | "pro";
 
@@ -14,6 +15,9 @@ declare module "next-auth" {
     user: {
       id: string;
       type: UserType;
+      promptCount: number;
+      maxPrompts: number;
+      quotaResetsAt: string | null;
     } & DefaultSession["user"];
   }
 
@@ -28,6 +32,9 @@ declare module "next-auth/jwt" {
   interface JWT extends DefaultJWT {
     id: string;
     type: UserType;
+    promptCount: number;
+    maxPrompts: number;
+    quotaResetsAt: string | null;
   }
 }
 
@@ -109,7 +116,38 @@ export const {
         return token;
       }
 
+      // For Google, user is not present after first sign-in, but token.email is
+      // This block might be redundant if the earlier user block handles Google correctly on subsequent calls
+      // However, it's here for robustness or specific Google post-first-signin scenarios.
+      if (account?.provider === "google" && token.email && !token.id) { // ensure id isn't already set
+        console.log('Google JWT enrichment on subsequent calls');
+        const users = await getUser(token.email);
+        if (users.length > 0) {
+          token.id = users[0].id;
+          token.type = users[0].type || "regular";
+        }
+      }
 
+      // Fetch prompt details if token.id and token.type are available
+      if (token.id && token.type) {
+        try {
+          const userDetails = await getUserPromptDetails(token.id as string);
+          token.promptCount = userDetails?.prompt_count ?? 0;
+          token.maxPrompts = entitlementsByUserType[token.type as UserType]?.maxMessagesPerDay ?? 0;
+          token.quotaResetsAt = userDetails?.quota_resets_at ? new Date(userDetails.quota_resets_at).toISOString() : null;
+        } catch (error) {
+          console.error("Error fetching user prompt details in JWT callback:", error);
+          token.promptCount = 0;
+          token.maxPrompts = 0; // Consider a default from entitlements for 'guest' if appropriate
+          token.quotaResetsAt = null;
+        }
+      } else {
+        // Ensure these fields are initialized even if id/type are missing for some reason
+        // (though this shouldn't happen in a normal flow)
+        token.promptCount = 0;
+        token.maxPrompts = 0;
+        token.quotaResetsAt = null;
+      }
 
       return token;
     },
@@ -117,6 +155,9 @@ export const {
       if (session.user) {
         session.user.id = token.id;
         session.user.type = token.type;
+        session.user.promptCount = token.promptCount as number;
+        session.user.maxPrompts = token.maxPrompts as number;
+        session.user.quotaResetsAt = token.quotaResetsAt as string | null;
         // console.log("Session", session);
       }
 

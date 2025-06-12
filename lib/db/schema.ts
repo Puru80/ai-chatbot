@@ -9,6 +9,8 @@ import {
   primaryKey,
   foreignKey,
   boolean,
+  integer,
+  sql,
 } from 'drizzle-orm/pg-core';
 
 export const user = pgTable('User', {
@@ -17,10 +19,24 @@ export const user = pgTable('User', {
   password: varchar('password', { length: 64 }),
   provider: varchar('provider', {enum: ['credentials', 'google'] }),
   type: varchar('type', { enum: ['guest', 'regular', 'pro'] }),
-  personality_context: text('personality_context')
+  personality_context: text('personality_context'),
 });
 
 export type User = InferSelectModel<typeof user>;
+
+export const userPromptUsage = pgTable('userPromptUsage', {
+  userId: uuid('user_id')
+    .primaryKey()
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  promptCount: integer('prompt_count').notNull().default(0),
+  quotaResetsAt: timestamp('quota_resets_at', { withTimezone: true }),
+  lastPromptAt: timestamp('last_prompt_at', { withTimezone: true })
+    .notNull()
+    .default(sql`now()`),
+});
+
+export type UserPromptUsage = InferSelectModel<typeof userPromptUsage>;
 
 export const chat = pgTable('Chat', {
   id: uuid('id').primaryKey().notNull().defaultRandom(),

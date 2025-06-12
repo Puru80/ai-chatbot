@@ -11,6 +11,7 @@ import {
   inArray,
   lt,
   type SQL,
+  sql,
 } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
@@ -27,11 +28,13 @@ import {
   type DBMessage,
   type Chat,
   stream,
+  userPromptUsage, // Added import
 } from './schema';
 import type { ArtifactKind } from '@/components/artifact';
 import { generateUUID } from '../utils';
 import { generateHashedPassword } from './utils';
 import type { VisibilityType } from '@/components/visibility-selector';
+import type { UserType } from '@/app/(auth)/auth'; // Added import for UserType
 
 // Optionally, if not using email/pass login, you can
 // use the Drizzle adapter for Auth.js / NextAuth
@@ -46,6 +49,92 @@ export async function getUser(email: string): Promise<Array<User>> {
     return await db.select().from(user).where(eq(user.email, email));
   } catch (error) {
     console.error('Failed to get user from database');
+    throw error;
+  }
+}
+
+export async function getUserPromptDetails(userId: string): Promise<{ type: UserType | null; prompt_count: number; quota_resets_at: Date | null; } | null> {
+  try {
+    const result = await db
+      .select({
+        type: user.type,
+        prompt_count: userPromptUsage.promptCount,
+        quota_resets_at: userPromptUsage.quotaResetsAt,
+      })
+      .from(user)
+      .leftJoin(userPromptUsage, eq(user.id, userPromptUsage.userId))
+      .where(eq(user.id, userId))
+      .limit(1);
+
+    if (result.length === 0) {
+      return null; // User not found in the user table
+    }
+    const data = result[0];
+    return {
+      type: data.type as UserType | null, // User might not have a type if record is malformed, though unlikely
+      prompt_count: data.prompt_count ?? 0, // Default to 0 if no record in userPromptUsage
+      quota_resets_at: data.quota_resets_at ?? null, // Default to null
+    };
+  } catch (error) {
+    console.error('Failed to get user prompt details:', error);
+    throw error;
+  }
+}
+
+export async function incrementUserPromptCount(userId: string) {
+  try {
+    const result = await db
+      .insert(userPromptUsage)
+      .values({
+        userId: userId,
+        promptCount: 1,
+        lastPromptAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: userPromptUsage.userId,
+        set: {
+          promptCount: sql`${userPromptUsage.promptCount} + 1`,
+          lastPromptAt: new Date(),
+        },
+      })
+      .returning({
+        userId: userPromptUsage.userId,
+        promptCount: userPromptUsage.promptCount,
+        lastPromptAt: userPromptUsage.lastPromptAt,
+      });
+    return result.length > 0 ? result[0] : null;
+  } catch (error) {
+    console.error('Failed to increment user prompt count:', error);
+    throw error;
+  }
+}
+
+export async function resetUserPromptQuota(userId: string, nextResetTime: Date) {
+  try {
+    const result = await db
+      .insert(userPromptUsage)
+      .values({
+        userId: userId,
+        promptCount: 0,
+        quotaResetsAt: nextResetTime,
+        lastPromptAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: userPromptUsage.userId,
+        set: {
+          promptCount: 0,
+          quotaResetsAt: nextResetTime,
+          lastPromptAt: new Date(), // Update lastPromptAt on reset as well
+        },
+      })
+      .returning({
+        userId: userPromptUsage.userId,
+        promptCount: userPromptUsage.promptCount,
+        quotaResetsAt: userPromptUsage.quotaResetsAt,
+      });
+    return result.length > 0 ? result[0] : null;
+  } catch (error) {
+    console.error('Failed to reset user prompt quota:', error);
     throw error;
   }
 }
