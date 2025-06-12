@@ -1,19 +1,9 @@
 import {
-  appendClientMessage,
   appendResponseMessages,
   createDataStream,
-  InvalidToolArgumentsError,
-  NoSuchToolError,
-  smoothStream,
-  appendClientMessage,
-  appendResponseMessages,
-  createDataStream,
-  InvalidToolArgumentsError,
-  NoSuchToolError,
   smoothStream,
   streamText,
-  ToolExecutionError,
-  type CoreMessage, // Added CoreMessage
+  type CoreMessage, UserContent, AssistantContent, ToolContent, // Added CoreMessage
 } from "ai";
 import {auth, type UserType} from "@/app/(auth)/auth";
 import {type RequestHints, systemPrompt} from "@/lib/ai/prompts";
@@ -30,12 +20,7 @@ import {
 } from "@/lib/db/queries";
 import {generateUUID, getTrailingMessageId} from "@/lib/utils";
 import {generateTitleFromUserMessage, generateEnhancedPrompt} from "../../actions";
-import {createDocument} from "@/lib/ai/tools/create-document";
-import {updateDocument} from "@/lib/ai/tools/update-document";
-import {requestSuggestions} from "@/lib/ai/tools/request-suggestions";
-import {getWeather} from "@/lib/ai/tools/get-weather";
 import {isProductionEnvironment} from "@/lib/constants";
-// import { myProvider } from "@/lib/ai/providers";
 import {entitlementsByUserType} from "@/lib/ai/entitlements";
 import {postRequestBodySchema, type PostRequestBody} from "./schema";
 import {geolocation} from "@vercel/functions";
@@ -49,11 +34,10 @@ import {differenceInSeconds} from "date-fns";
 import {OpenRouterProvider} from "@/lib/ai/openrouter-provider";
 import {LLMManager} from "@/lib/ai/manager";
 
-export const maxDuration = 60;
 const openRouterProvider = new OpenRouterProvider();
 const llmManager = LLMManager.getInstance();
 
-const CONTEXT_TOKEN_BUDGET = 3000; // Added token budget
+const CONTEXT_TOKEN_BUDGET = 4000; // Added token budget
 
 let globalStreamContext: ResumableStreamContext | null = null;
 
@@ -78,7 +62,7 @@ function getStreamContext() {
 }
 
 // Helper to estimate token count (simple heuristic)
-function estimateTokens(text: string): number {
+function estimateTokens(text: string | UserContent | AssistantContent | ToolContent): number {
   return Math.ceil(text.length / 4);
 }
 
@@ -104,7 +88,7 @@ function mapDbMessagesToCoreMessages(dbMessages: DBMessage[]): CoreMessage[] {
     id: dbMsg.id,
     role: dbMsg.role as 'user' | 'assistant' | 'system', // Ensure role compatibility
     content: dbMsg.parts
-      .filter(part => part.type === 'text' && typeof part.text === 'string') // Filter for text parts
+      .filter(part => part.type === 'text') // Filter for text parts
       .map(part => part.text)
       .join('\n'), // Concatenate text parts
   }));
@@ -216,7 +200,7 @@ export async function POST(request: Request) {
 
     let enhancedUserPrompt: string | undefined;
     let enhancedSystemPrompt: string | undefined;
-    if(shouldEnhancePrompt){
+    if (shouldEnhancePrompt) {
       const enhancedPrompt = await generateEnhancedPrompt({
         message
       })
@@ -224,20 +208,23 @@ export async function POST(request: Request) {
       console.log("Enhanced Prompt: ", enhancedPrompt.user_prompt);
       console.log("Enhanced System Prompt: ", enhancedPrompt.system_prompt);
 
-      enhancedSystemPrompt = enhancedPrompt.systemPrompt;
-      enhancedUserPrompt = enhancedPrompt.userPrompt;
+      enhancedSystemPrompt = enhancedPrompt.user_prompt;
+      enhancedUserPrompt = enhancedPrompt.system_prompt;
     }
 
+    // Building appropriate context
     const dbPreviousMessages = await getMessagesByChatId({id});
     // Convert DB messages to CoreMessages
     // Assuming getMessagesByChatId returns something compatible with DBMessage[]
     const previousCoreMessages: CoreMessage[] = mapDbMessagesToCoreMessages(dbPreviousMessages as DBMessage[]);
 
+    console.log("User Input: ", message);
+
     // Convert the new user message (UIMessage from 'ai') to CoreMessage
     const currentUserCoreMessage: CoreMessage = {
-      id: message.id, // from requestBody.message (UIMessage)
+      // id: message.id, // from requestBody.message (UIMessage)
       role: message.role as 'user', // from requestBody.message
-      content: message.parts.map(p => typeof p === 'string' ? p : p.text).join('\n'), // Handle UIMessagePart
+      content: enhancedUserPrompt ? enhancedUserPrompt : message.parts.map(p => p.text).join('\n'), // Handle UIMessagePart
     };
 
     const allCoreMessages: CoreMessage[] = [...previousCoreMessages, currentUserCoreMessage];
@@ -254,18 +241,22 @@ export async function POST(request: Request) {
     // Prepare system prompt with personality
     let baseSystemPrompt = systemPrompt({selectedChatModel, requestHints});
     if (enhancedSystemPrompt) { // If using enhanced prompt, that takes precedence
-        baseSystemPrompt = enhancedSystemPrompt;
+      baseSystemPrompt = enhancedSystemPrompt;
     }
     const finalSystemPrompt = userPersonalityContext
-        ? userPersonalityContext + "\n\n" + baseSystemPrompt
-        : baseSystemPrompt;
+      ? userPersonalityContext + "\n\n" + baseSystemPrompt
+      : baseSystemPrompt;
+
+    // console.log("Final System Prompt", finalSystemPrompt)
 
     // Call truncation function
     const curatedMessages = await truncateConversationHistory(
-        allCoreMessages,
-        finalSystemPrompt, // This already includes personality
-        CONTEXT_TOKEN_BUDGET
+      allCoreMessages,
+      finalSystemPrompt, // This already includes personality
+      CONTEXT_TOKEN_BUDGET
     );
+
+    console.log("Context: ", curatedMessages);
 
     await saveMessages({
       messages: [
@@ -341,7 +332,7 @@ export async function POST(request: Request) {
                       attachments:
                         assistantMessage.experimental_attachments ?? [],
                       createdAt: new Date(),
-                      modelId: llmManager.getModelNameById(selectedChatModel),
+                      modelId: modelName,
                     },
                   ],
                 });
