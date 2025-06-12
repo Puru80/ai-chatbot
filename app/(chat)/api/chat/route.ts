@@ -132,9 +132,7 @@ export async function POST(request: Request) {
 
   try {
     const json = await request.json();
-    // console.log("Parsed JSON: ", json);
     requestBody = postRequestBodySchema.parse(json);
-    console.log('RequestBody: ', requestBody);
   } catch (e) {
     console.log("Error: ", e);
     return new Response("Invalid request body", {status: 400});
@@ -205,8 +203,8 @@ export async function POST(request: Request) {
         message
       })
 
-      console.log("Enhanced Prompt: ", enhancedPrompt.user_prompt);
-      console.log("Enhanced System Prompt: ", enhancedPrompt.system_prompt);
+      // console.log("Enhanced Prompt: ", enhancedPrompt.user_prompt);
+      // console.log("Enhanced System Prompt: ", enhancedPrompt.system_prompt);
 
       enhancedSystemPrompt = enhancedPrompt.user_prompt;
       enhancedUserPrompt = enhancedPrompt.system_prompt;
@@ -217,8 +215,6 @@ export async function POST(request: Request) {
     // Convert DB messages to CoreMessages
     // Assuming getMessagesByChatId returns something compatible with DBMessage[]
     const previousCoreMessages: CoreMessage[] = mapDbMessagesToCoreMessages(dbPreviousMessages as DBMessage[]);
-
-    console.log("User Input: ", message);
 
     // Convert the new user message (UIMessage from 'ai') to CoreMessage
     const currentUserCoreMessage: CoreMessage = {
@@ -247,16 +243,12 @@ export async function POST(request: Request) {
       ? userPersonalityContext + "\n\n" + baseSystemPrompt
       : baseSystemPrompt;
 
-    // console.log("Final System Prompt", finalSystemPrompt)
-
     // Call truncation function
     const curatedMessages = await truncateConversationHistory(
       allCoreMessages,
       finalSystemPrompt, // This already includes personality
       CONTEXT_TOKEN_BUDGET
     );
-
-    console.log("Context: ", curatedMessages);
 
     await saveMessages({
       messages: [
