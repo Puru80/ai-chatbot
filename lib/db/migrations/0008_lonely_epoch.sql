@@ -1,0 +1,1 @@
+ALTER TABLE "User" ADD COLUMN "personality_context" text;

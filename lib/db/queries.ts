@@ -61,6 +61,34 @@ export async function createUser(email: string, password: string, provider?: 'cr
   }
 }
 
+export async function getUserPersonality(userId: string): Promise<string | null> {
+  try {
+    const result = await db
+      .select({ personality_context: user.personality_context })
+      .from(user)
+      .where(eq(user.id, userId));
+    if (result.length > 0 && result[0].personality_context) {
+      return result[0].personality_context;
+    }
+    return null;
+  } catch (error) {
+    console.error('Failed to get user personality from database');
+    throw error;
+  }
+}
+
+export async function updateUserPersonality(userId: string, personalityContext: string) {
+  try {
+    return await db
+      .update(user)
+      .set({ personality_context: personalityContext })
+      .where(eq(user.id, userId));
+  } catch (error) {
+    console.error('Failed to update user personality in database');
+    throw error;
+  }
+}
+
 export async function createGuestUser() {
   const email = `guest-${Date.now()}`;
   const password = generateHashedPassword(generateUUID());

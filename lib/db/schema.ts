@@ -16,7 +16,8 @@ export const user = pgTable('User', {
   email: varchar('email', { length: 64 }).notNull(),
   password: varchar('password', { length: 64 }),
   provider: varchar('provider', {enum: ['credentials', 'google'] }),
-  type: varchar('type', { enum: ['guest', 'regular', 'pro'] })
+  type: varchar('type', { enum: ['guest', 'regular', 'pro'] }),
+  personality_context: text('personality_context')
 });
 
 export type User = InferSelectModel<typeof user>;
