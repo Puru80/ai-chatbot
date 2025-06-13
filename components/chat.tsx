@@ -19,6 +19,7 @@ import {getChatHistoryPaginationKey} from './sidebar-history';
 import {toast} from './toast';
 import type {Session} from 'next-auth';
 import {useSearchParams} from 'next/navigation';
+import { LimitExhaustionModal } from '@/components/limit-exhaustion-modal'; // Added
 import {useChatVisibility} from '@/hooks/use-chat-visibility';
 import {useAutoResume} from '@/hooks/use-auto-resume';
 import {LLMManager} from "@/lib/ai/manager";
@@ -88,10 +89,20 @@ export function Chat({
       mutate(unstable_serialize(getChatHistoryPaginationKey));
     },
     onError: (error) => {
-      toast({
-        type: 'error',
-        description: error.message,
-      });
+      // Check if the error object is a Response and has status 429
+      if (error instanceof Response && error.status === 429) {
+        setIsLimitModalOpen(true);
+      } else if (typeof error.message === 'string' && error.message.includes('429')) {
+        // Fallback for errors where status might be in the message
+        setIsLimitModalOpen(true);
+      }
+      else {
+        // For other errors, show a toast
+        toast({
+          type: 'error',
+          description: error.message || 'An unknown error occurred.',
+        });
+      }
     },
   });
 
@@ -121,6 +132,7 @@ export function Chat({
   const isArtifactVisible = useArtifactSelector((state) => state.isVisible);
 
   const [showGuestModal, setShowGuestModal] = useState(false);
+  const [isLimitModalOpen, setIsLimitModalOpen] = useState(false); // Added
 
   const isGuest = session?.user?.type === 'guest';
 
@@ -227,6 +239,11 @@ export function Chat({
       <GuestLimitModal
         open={showGuestModal}
         onClose={() => setShowGuestModal(false)}
+      />
+      <LimitExhaustionModal
+        isOpen={isLimitModalOpen}
+        onClose={() => setIsLimitModalOpen(false)}
+        // onUpgrade={() => router.push('/upgrade')} // Example if using router for upgrade
       />
     </>
   );

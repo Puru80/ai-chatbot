@@ -27,6 +27,7 @@ import {
   type DBMessage,
   type Chat,
   stream,
+  promptUsage,
 } from './schema';
 import type { ArtifactKind } from '@/components/artifact';
 import { generateUUID } from '../utils';
@@ -47,6 +48,73 @@ export async function getUser(email: string): Promise<Array<User>> {
   } catch (error) {
     console.error('Failed to get user from database');
     throw error;
+  }
+}
+
+export async function getPromptUsage(userId: string, date: Date) {
+  try {
+    const result = await db
+      .select()
+      .from(promptUsage)
+      .where(and(eq(promptUsage.userId, userId), eq(promptUsage.date, date)))
+      .limit(1);
+    return result.length > 0 ? result[0] : null;
+  } catch (error) {
+    console.error('Failed to get prompt usage from database');
+    throw error;
+  }
+}
+
+export async function createOrUpdatePromptUsage({
+  userId,
+  date,
+  promptCount,
+  limitExhaustedAt,
+  dailyQuota,
+  id,
+}: {
+  userId: string;
+  date: Date;
+  promptCount: number;
+  limitExhaustedAt: Date | null;
+  dailyQuota: number;
+  id?: string;
+}) {
+  if (id) {
+    try {
+      const result = await db
+        .update(promptUsage)
+        .set({
+          prompt_count: promptCount,
+          limit_exhausted_at: limitExhaustedAt,
+          daily_quota: dailyQuota,
+          date: date,
+          userId: userId,
+        })
+        .where(eq(promptUsage.id, id))
+        .returning();
+      return result;
+    } catch (error) {
+      console.error('Failed to update prompt usage in database');
+      throw error;
+    }
+  } else {
+    try {
+      const result = await db
+        .insert(promptUsage)
+        .values({
+          userId,
+          date,
+          prompt_count: promptCount,
+          limit_exhausted_at: limitExhaustedAt,
+          daily_quota: dailyQuota,
+        })
+        .returning();
+      return result;
+    } catch (error) {
+      console.error('Failed to insert prompt usage in database');
+      throw error;
+    }
   }
 }
 
