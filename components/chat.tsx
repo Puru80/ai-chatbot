@@ -1,7 +1,7 @@
 'use client';
 
 import type { AppMessage } from '@/app/types/model';
-import type {Attachment, UIMessage} from 'ai';
+import type {Attachment} from 'ai';
 import {GuestLimitModal} from './guest-limit-modal';
 import {useChat} from '@ai-sdk/react';
 import {useEffect, useState} from 'react';
@@ -92,7 +92,7 @@ export function Chat({
       // Check if the error object is a Response and has status 429
       if (error instanceof Response && error.status === 429) {
         setIsLimitModalOpen(true);
-      } else if (typeof error.message === 'string' && error.message.includes('429')) {
+      } else if (error.message.includes('429')) {
         // Fallback for errors where status might be in the message
         setIsLimitModalOpen(true);
       }
