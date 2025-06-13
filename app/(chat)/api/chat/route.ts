@@ -203,8 +203,8 @@ export async function POST(request: Request) {
 
     // Initialize variables for current day's usage from userPromptUsage (which is for currentUTCDate)
     let promptCountToday = 0;
-    let limitExhaustedTimestamp = null;
-    let promptUsageId = null;
+    let limitExhaustedTimestamp;
+    let promptUsageId: string | undefined;
 
     if (userPromptUsage) {
         promptCountToday = userPromptUsage.prompt_count;
@@ -229,7 +229,7 @@ export async function POST(request: Request) {
             promptCount: promptCountToday, // or dailyQuota
             limitExhaustedAt: now,
             dailyQuota: dailyQuota,
-            id: promptUsageId // Pass ID to update existing record for currentUTCDate
+            id: promptUsageId ? promptUsageId: undefined // Pass ID to update existing record for currentUTCDate
         });
         return new Response("You have reached your daily prompt limit.", { status: 429 });
     }
