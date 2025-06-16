@@ -87,6 +87,9 @@ export function Chat({
       ));
 
       mutate(unstable_serialize(getChatHistoryPaginationKey));
+
+      // Trigger SWR revalidation for prompt usage
+      mutate('/api/prompt-usage');
     },
     onError: (error) => {
       // Check if the error object is a Response and has status 429
