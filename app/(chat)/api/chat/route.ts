@@ -11,12 +11,14 @@ import {
   createStreamId,
   deleteChatById,
   getChatById,
-  getMessageCountByUserId,
+  // getMessageCountByUserId, // Commented out as per requirement
   getMessagesByChatId,
   getStreamIdsByChatId,
   getUserPersonality, // Added getUserPersonality
   saveChat,
   saveMessages,
+  getPromptUsage,
+  createOrUpdatePromptUsage,
 } from "@/lib/db/queries";
 import {generateUUID, getTrailingMessageId} from "@/lib/utils";
 import {generateTitleFromUserMessage, generateEnhancedPrompt} from "../../actions";
@@ -162,19 +164,76 @@ export async function POST(request: Request) {
       return Response.json({redirectToSignUp: true, prompt: requestBody.message});
     }
 
-    const messageCount = await getMessageCountByUserId({
-      id: session.user.id,
-      differenceInHours: 24,
-    });
+    // --- Prompt Usage Reset & Check Logic START ---
+    const dailyQuota = entitlementsByUserType[userType].maxMessagesPerDay;
 
-    if (messageCount > entitlementsByUserType[userType].maxMessagesPerDay) {
-      return new Response(
-        "You have exceeded your maximum number of messages for the day! Please try again later.",
-        {
-          status: 429,
+    const currentUTCDate = new Date();
+    currentUTCDate.setUTCHours(0, 0, 0, 0);
+
+    const nowIST = new Date(new Date().getTime() + (5.5 * 60 * 60 * 1000));
+    const resetHourIST = 5;
+    const resetMinuteIST = 30;
+
+    let userPromptUsage = await getPromptUsage(session.user.id, currentUTCDate);
+
+    if (!userPromptUsage) {
+      const yesterdayUTCDate = new Date(currentUTCDate);
+      yesterdayUTCDate.setUTCDate(currentUTCDate.getUTCDate() - 1);
+      const previousDayUsage = await getPromptUsage(session.user.id, yesterdayUTCDate);
+
+      if (previousDayUsage) {
+        const previousDayExhausted = previousDayUsage.limit_exhausted_at || previousDayUsage.prompt_count >= previousDayUsage.daily_quota;
+        const isPastResetTimeIST = nowIST.getUTCHours() > resetHourIST || (nowIST.getUTCHours() === resetHourIST && nowIST.getUTCMinutes() >= resetMinuteIST);
+
+        if (previousDayExhausted && isPastResetTimeIST) {
+          // Reset triggered: Create a new record for the current UTC day with 0 prompts
+          await createOrUpdatePromptUsage({
+            userId: session.user.id,
+            date: currentUTCDate,
+            promptCount: 0,
+            limitExhaustedAt: null,
+            dailyQuota: dailyQuota, // Use current day's quota
+            // No id, so it inserts a new record
+          });
+          // Re-fetch userPromptUsage for currentUTCDate as it's now reset
+          userPromptUsage = await getPromptUsage(session.user.id, currentUTCDate);
         }
-      );
+      }
     }
+
+    // Initialize variables for current day's usage from userPromptUsage (which is for currentUTCDate)
+    let promptCountToday = 0;
+    let limitExhaustedTimestamp;
+    let promptUsageId: string | undefined;
+
+    if (userPromptUsage) {
+        promptCountToday = userPromptUsage.prompt_count;
+        limitExhaustedTimestamp = userPromptUsage.limit_exhausted_at;
+        promptUsageId = userPromptUsage.id; // This ID is for the currentUTCDate record
+    }
+    // else, if userPromptUsage is still null, it's the user's first prompt today and no reset was applicable.
+    // The first prompt will create a new record in onFinish.
+
+    // Check if limit was already exhausted today (e.g. from a previous request today after reset)
+    if (limitExhaustedTimestamp) {
+        return new Response("You have exhausted your daily prompt limit and need to wait for it to reset.", { status: 429 });
+    }
+
+    // Check if current prompt attempt would exceed quota for today
+    if (promptCountToday >= dailyQuota) {
+        const now = new Date(); // For limit_exhausted_at timestamp
+        // This update is for the currentUTCDate record
+        await createOrUpdatePromptUsage({
+            userId: session.user.id,
+            date: currentUTCDate, // Explicitly use currentUTCDate
+            promptCount: promptCountToday, // or dailyQuota
+            limitExhaustedAt: now,
+            dailyQuota: dailyQuota,
+            id: promptUsageId ? promptUsageId: undefined // Pass ID to update existing record for currentUTCDate
+        });
+        return new Response("You have reached your daily prompt limit.", { status: 429 });
+    }
+    // --- Prompt Usage Reset & Check Logic END ---
 
     const chat = await getChatById({id});
 
@@ -328,8 +387,40 @@ export async function POST(request: Request) {
                     },
                   ],
                 });
-              } catch (_) {
-                console.error("Failed to save chat");
+
+                    // --- Increment Prompt Usage START ---
+                    // Re-fetch current usage for currentUTCDate to ensure atomicity if multiple requests are near-simultaneous
+                    const currentUsageOnFinish = await getPromptUsage(session.user.id, currentUTCDate);
+                    let countForUpdate = 1;
+                    let idForUpdateInOnFinish = promptUsageId; // Use ID from initial check if available for currentUTCDate
+
+                    if (currentUsageOnFinish) {
+                        countForUpdate = currentUsageOnFinish.prompt_count + 1;
+                        idForUpdateInOnFinish = currentUsageOnFinish.id; // Always use the most current ID
+                    } else if (promptUsageId) {
+                        // This means a record for currentUTCDate existed initially (e.g. after reset) but somehow gone now?
+                        // Or promptUsageId was from a previous day if logic was different.
+                        // For safety, if currentUsageOnFinish is null, it's better to treat as insert for currentUTCDate.
+                        // However, our promptUsageId is already for currentUTCDate due to the logic at the start.
+                        // If userPromptUsage was null initially, promptUsageId is null.
+                        // If userPromptUsage was populated (either by fetch or reset), promptUsageId is for currentUTCDate.
+                        countForUpdate = 1; // Should be first prompt if no record found now.
+                    }
+
+
+                    await createOrUpdatePromptUsage({
+                        userId: session.user.id,
+                        date: currentUTCDate, // Use currentUTCDate for the record
+                        promptCount: countForUpdate,
+                        limitExhaustedAt: (countForUpdate >= dailyQuota) ? new Date() : null,
+                        dailyQuota: dailyQuota,
+                        id: idForUpdateInOnFinish // This will be null if no record existed for currentUTCDate yet, leading to an insert.
+                                                 // Or it will be the ID of currentUTCDate's record.
+                    });
+                    // --- Increment Prompt Usage END ---
+
+                  } catch (e) {
+                    console.error("Failed to save chat or update prompt usage", e);
               }
             }
           },

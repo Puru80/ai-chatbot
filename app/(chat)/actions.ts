@@ -6,10 +6,13 @@ import {
   deleteMessagesByChatIdAfterTimestamp,
   getMessageById, updateChatTitleById,
   updateChatVisiblityById,
+  getPromptUsage,
 } from '@/lib/db/queries';
 import type { VisibilityType } from '@/components/visibility-selector';
 import { myProvider } from '@/lib/ai/providers';
 import { OpenRouterProvider } from "@/lib/ai/openrouter-provider";
+import { auth, type UserType } from '@/app/(auth)/auth';
+import { entitlementsByUserType } from '@/lib/ai/entitlements';
 
 const openRouterProvider = new OpenRouterProvider();
 
@@ -112,4 +115,34 @@ export async function updateChatTitle({
 }) {
   // Implement your DB update logic here
   await updateChatTitleById({ chatId, title }); // You need to implement this in your db/queries
+}
+
+export async function getUserPromptUsage() {
+  const session = await auth();
+  if (!session?.user?.id || !session.user.type) {
+    return null; // Or throw an error, or return a specific structure
+  }
+
+  const userType = session.user.type as UserType;
+  const dailyQuota = entitlementsByUserType[userType].maxMessagesPerDay;
+
+  const currentUTCDate = new Date();
+  currentUTCDate.setUTCHours(0, 0, 0, 0);
+
+  const usageRecord = await getPromptUsage(session.user.id, currentUTCDate);
+
+  if (usageRecord) {
+    return {
+      promptCount: usageRecord.prompt_count,
+      dailyQuota: usageRecord.daily_quota, // Use quota from record
+      limitExhaustedAt: usageRecord.limit_exhausted_at
+    };
+  } else {
+    // No record for today, means count is 0
+    return {
+      promptCount: 0,
+      dailyQuota: dailyQuota, // Fresh quota for the day
+      limitExhaustedAt: null
+    };
+  }
 }
