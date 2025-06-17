@@ -12,6 +12,7 @@ import { memo } from 'react';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { type VisibilityType, VisibilitySelector } from './visibility-selector';
 import type { Session } from 'next-auth';
+import Link from 'next/link'; // Added Link import
 
 function PureChatHeader({
   chatId,
@@ -24,7 +25,7 @@ function PureChatHeader({
   selectedModelId: string;
   selectedVisibilityType: VisibilityType;
   isReadonly: boolean;
-  session: Session;
+  session: Session; // Assuming Session type includes user.type or we'll adjust later
 }) {
   const router = useRouter();
   const { open } = useSidebar();
@@ -70,6 +71,19 @@ function PureChatHeader({
         />
       )}
 
+      {/* Upgrade to Pro Button - Conditionally Rendered */}
+      {session?.user && session.user.type !== 'pro' && (
+        <Link href="/pricing" passHref legacyBehavior>
+          <Button
+            variant="ghost"
+            className="order-5 ml-auto px-3 h-fit md:h-[34px] text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300"
+          >
+            Upgrade to Pro
+          </Button>
+        </Link>
+      )}
+
+      {/* Existing empty Button, seems like a placeholder or for other purposes. Keeping it for now. */}
       <Button
         className="bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-zinc-200 text-zinc-50 dark:text-zinc-900 hidden md:flex py-1.5 px-2 h-fit md:h-[34px] order-4 md:ml-auto"
         asChild
@@ -79,5 +93,13 @@ function PureChatHeader({
 }
 
 export const ChatHeader = memo(PureChatHeader, (prevProps, nextProps) => {
-  return prevProps.selectedModelId === nextProps.selectedModelId;
+  // Considering session changes for memoization if needed, but for now, modelId is the key.
+  // If session.user.type changes often and should trigger re-render, this condition might need adjustment.
+  return (
+    prevProps.selectedModelId === nextProps.selectedModelId &&
+    prevProps.session?.user?.type === nextProps.session?.user?.type &&
+    prevProps.chatId === nextProps.chatId &&
+    prevProps.isReadonly === nextProps.isReadonly &&
+    prevProps.selectedVisibilityType === nextProps.selectedVisibilityType
+  );
 });

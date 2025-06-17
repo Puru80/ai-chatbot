@@ -40,7 +40,8 @@ import type { VisibilityType } from '@/components/visibility-selector';
 
 // biome-ignore lint: Forbidden non-null assertion.
 const client = postgres(process.env.POSTGRES_URL!);
-const db = drizzle(client);
+// Export db instance for use in server actions
+export const db = drizzle(client);
 
 export async function getUser(email: string): Promise<Array<User>> {
   try {

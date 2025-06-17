@@ -51,7 +51,7 @@ export function LimitExhaustionModal({ isOpen, onClose, onUpgrade }: LimitExhaus
             <Button onClick={onUpgrade}>Upgrade to Pro</Button>
           ) : (
             <Button asChild>
-              <Link href="/upgrade">Upgrade to Pro</Link>
+              <Link href="/pricing">Upgrade to Pro</Link>
             </Button>
           )}
         </AlertDialogFooter>
