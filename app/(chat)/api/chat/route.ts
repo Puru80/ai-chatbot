@@ -128,8 +128,6 @@ async function truncateConversationHistory(
 }
 
 export async function POST(request: Request) {
-  console.log("POST /api/chat");
-
   let requestBody: PostRequestBody;
 
   try {
@@ -216,7 +214,9 @@ export async function POST(request: Request) {
 
     // Check if limit was already exhausted today (e.g. from a previous request today after reset)
     if (limitExhaustedTimestamp) {
-        return new Response("You have exhausted your daily prompt limit and need to wait for it to reset.", { status: 429 });
+      let res = new Response("You have exhausted your daily prompt limit and need to wait for it to reset.", { status: 429 })
+      console.log("Response: ", res);
+      return res
     }
 
     // Check if current prompt attempt would exceed quota for today

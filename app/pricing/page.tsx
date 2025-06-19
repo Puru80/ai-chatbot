@@ -2,23 +2,26 @@
 
 import React, { useTransition, useState, SVGProps } from 'react';
 import { upgradeToPro, type UpgradeActionState } from '@/app/(auth)/actions';
+import {CheckIcon} from "@/components/icons";
+import {Button} from "@/components/ui/button";
+import Link from "next/link";
 
-// Simple Checkmark SVG component
-const CheckIcon = (props: SVGProps<SVGSVGElement>) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 20 20"
-    fill="currentColor"
-    className="w-5 h-5"
-    {...props}
-  >
-    <path
-      fillRule="evenodd"
-      d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z"
-      clipRule="evenodd"
-    />
-  </svg>
-);
+// // Simple Checkmark SVG component
+// const CheckIcon = (props: SVGProps<SVGSVGElement>) => (
+//   <svg
+//     xmlns="http://www.w3.org/2000/svg"
+//     viewBox="0 0 20 20"
+//     fill="currentColor"
+//     className="size-1"
+//     {...props}
+//   >
+//     <path
+//       fillRule="evenodd"
+//       d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z"
+//       clipRule="evenodd"
+//     />
+//   </svg>
+// );
 
 const PricingPage = () => {
   const [isPending, startTransition] = useTransition();
@@ -44,10 +47,9 @@ const PricingPage = () => {
       price: '$0 / month',
       description: 'Get started with basic features for individual use.',
       features: [
-        '10 messages per day',
+        '5 prompts per day',
         'Access to basic AI models',
-        'Community support',
-        'Limited chat history',
+        'Prompt Enhancer',
       ],
       cta: {
         text: 'Current Plan',
@@ -61,14 +63,13 @@ const PricingPage = () => {
     },
     {
       name: 'Pro',
-      price: '$10 / month', // Placeholder price
+      price: '$15 / month', // Placeholder price
       description: 'Unlock premium features for power users and faster responses.',
       features: [
-        '100 messages per day',
+        'Everything in Pro',
+        '50 prompts per day',
         'Access to all AI models (including premium)',
         'Faster response times',
-        'Priority email support',
-        'Unlimited chat history',
       ],
       cta: {
         text: 'Upgrade to Pro',
@@ -112,23 +113,24 @@ const PricingPage = () => {
                 {plan.description}
               </p>
 
-              <ul className="space-y-3 mb-8 flex-grow">
+              <ul className="space-y-3 mb-8 grow">
                 {plan.features.map((feature, index) => (
-                  <li key={index} className="flex items-start">
-                    <CheckIcon className={`mr-2 mt-1 flex-shrink-0 ${plan.checkIconColor}`} />
+                  <li key={index} className="flex">
+                    {/*<CheckIcon className={`mr-2 mt-1 shrink-0 ${plan.checkIconColor}`} />*/}
+                    <CheckIcon/>
                     <span className={plan.featureTextColor}>{feature}</span>
                   </li>
                 ))}
               </ul>
 
-              <button
+              <Button
                 type="button"
                 onClick={plan.cta.action}
                 disabled={plan.cta.disabled}
                 className={plan.cta.className}
               >
                 {plan.cta.disabled && plan.name === 'Pro' && isPending ? plan.cta.pendingText : plan.cta.text}
-              </button>
+              </Button>
 
               {plan.isProPlan && actionResult && (
                 <div className="mt-4 text-center text-sm">
@@ -146,6 +148,16 @@ const PricingPage = () => {
             </div>
           ))}
         </div>
+
+        {/* Back to Chat Button */}
+        <div className="max-w-4xl mx-auto w-full flex justify-center mt-12">
+          <Button asChild variant="outline" className="mb-8 text-lg px-8 py-6 hover:scale-105 transition-transform duration-200">
+            <Link href="/">
+              Back to Chat
+            </Link>
+          </Button>
+        </div>
+
       </div>
     </div>
   );
