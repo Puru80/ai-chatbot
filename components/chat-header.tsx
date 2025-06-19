@@ -73,19 +73,21 @@ function PureChatHeader({
 
       {/* Upgrade to Pro Button - Conditionally Rendered */}
       {session?.user && session.user.type !== 'pro' && (
-        <Link href="/pricing" passHref legacyBehavior>
-          <Button
-            variant="ghost"
-            className="order-5 ml-auto px-3 h-fit md:h-[34px] text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300"
-          >
+        <Button
+          asChild // Use asChild to pass props to Link
+          variant="outline" // Changed from ghost to outline
+          // New order: md:order-4. Default order adjusted to 4. Removed ml-auto to keep it grouped.
+          className="order-4 md:order-4 px-3 h-fit md:h-[34px] text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 border-purple-600 dark:border-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/30"
+        >
+          <Link href="/pricing">
             Upgrade to Pro
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       )}
 
-      {/* Existing empty Button, seems like a placeholder or for other purposes. Keeping it for now. */}
+      {/* Existing empty Button, seems like a placeholder or for other purposes. Adjusted order to be last. */}
       <Button
-        className="bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-zinc-200 text-zinc-50 dark:text-zinc-900 hidden md:flex py-1.5 px-2 h-fit md:h-[34px] order-4 md:ml-auto"
+        className="bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-zinc-200 text-zinc-50 dark:text-zinc-900 hidden md:flex py-1.5 px-2 h-fit md:h-[34px] order-last md:order-5 md:ml-auto" // Changed to order-last (or md:order-5 if more items were added)
         asChild
       />
     </header>
