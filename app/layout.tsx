@@ -9,8 +9,8 @@ import React from "react";
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://chat.vercel.ai'),
-  title: 'Chatbot with Multi LLM Support',
-  description: 'Next.js chatbot template using the AI SDK.',
+  title: 'Askro',
+  description: 'Chatbot with Multi LLM Support',
 };
 
 export const viewport = {
