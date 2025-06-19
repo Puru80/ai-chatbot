@@ -134,7 +134,7 @@ export async function getUserPromptUsage() {
   if (usageRecord) {
     return {
       promptCount: usageRecord.prompt_count,
-      dailyQuota: usageRecord.daily_quota, // Use quota from record
+      dailyQuota: dailyQuota, // Always use quota from entitlements based on current userType
       limitExhaustedAt: usageRecord.limit_exhausted_at
     };
   } else {

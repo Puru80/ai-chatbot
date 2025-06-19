@@ -91,20 +91,27 @@ export function Chat({
       // Trigger SWR revalidation for prompt usage
       mutate('/api/prompt-usage');
     },
-    onError: (error) => {
-      // Check if the error object is a Response and has status 429
-      if (error instanceof Response && error.status === 429) {
-        setIsLimitModalOpen(true);
-      } else if (error.message.includes('429')) {
-        // Fallback for errors where status might be in the message
-        setIsLimitModalOpen(true);
-      }
-      else {
-        // For other errors, show a toast
-        toast({
-          type: 'error',
-          description: error.message || 'An unknown error occurred.',
-        });
+    onError: async (error) => {
+      if (error instanceof Response) {
+        const errorData = await error.json();
+        if (error.status === 429 || errorData?.message?.includes('limit')) {
+          setIsLimitModalOpen(true);
+        } else {
+          toast({
+            type: 'error',
+            description: errorData.message || 'An error occurred while processing your request.',
+          });
+        }
+      } else {
+        const errorMessage = error.message || 'An unknown error occurred.';
+        if (errorMessage.includes('limit') || errorMessage.includes('429')) {
+          setIsLimitModalOpen(true);
+        } else {
+          toast({
+            type: 'error',
+            description: errorMessage,
+          });
+        }
       }
     },
   });

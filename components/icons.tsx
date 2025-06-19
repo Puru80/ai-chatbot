@@ -417,6 +417,24 @@ export const PencilEditIcon = ({ size = 16 }: { size?: number }) => {
   );
 };
 
+export const CheckIcon = ({ size = 16 }: { size?: number }) => {
+  return (
+    <svg
+      height={size}
+      width={size}
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      style={{ color: 'currentcolor' }}
+    >
+      <path d="M4 8L7 11L12 5" />
+    </svg>
+  );
+};
+
 export const CheckedSquare = ({ size = 16 }: { size?: number }) => {
   return (
     <svg
