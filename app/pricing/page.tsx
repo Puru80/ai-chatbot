@@ -153,7 +153,7 @@ const PricingPage = () => {
         <div className="max-w-4xl mx-auto w-full flex justify-center mt-12">
           <Button asChild variant="outline" className="mb-8 text-lg px-8 py-6 hover:scale-105 transition-transform duration-200">
             <Link href="/">
-              Back to Chat
+              Back to Home
             </Link>
           </Button>
         </div>
