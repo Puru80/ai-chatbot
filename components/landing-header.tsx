@@ -8,7 +8,7 @@ export function LandingHeader() {
           <Link href="/" className="text-gray-600 hover:text-gray-900">
             Overview
           </Link>
-          <Link href="/pricing" className="text-gray-600 hover:text-gray-900">
+          <Link href="/plans" className="text-gray-600 hover:text-gray-900">
             Plans
           </Link>
         </nav>

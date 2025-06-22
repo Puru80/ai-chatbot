@@ -1,10 +1,17 @@
-import Link from "next/link"
+import Link from "next/link";
+import { redirect } from 'next/navigation';
+import { auth } from '@/app/(auth)/auth';
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Sparkles, MessageSquare, Zap, Shield, Users, ArrowRight, Bot, Brain, Rocket } from "lucide-react"
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const session = await auth();
+
+  if (session?.user) {
+    redirect('/chat');
+  }
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       {/* Navigation */}

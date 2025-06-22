@@ -116,7 +116,7 @@ export const upgradeToPro = async (
 
     // Revalidate paths to update UI components that depend on user type
     revalidatePath('/'); // For header button
-    revalidatePath('/pricing'); // For pricing page (e.g., to hide upgrade button)
+    revalidatePath('/plans'); // For pricing page (e.g., to hide upgrade button)
     // Revalidate other paths if necessary, e.g., a user profile page
     // revalidatePath('/profile');
 

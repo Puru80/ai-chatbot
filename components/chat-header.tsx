@@ -79,7 +79,7 @@ function PureChatHeader({
           // New order: md:order-4. Default order adjusted to 4. Removed ml-auto to keep it grouped.
           className="order-4 md:order-4 px-3 h-fit md:h-[34px] text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 border-purple-600 dark:border-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/30"
         >
-          <Link href="/pricing">
+          <Link href="/plans">
             Upgrade to Pro
           </Link>
         </Button>
