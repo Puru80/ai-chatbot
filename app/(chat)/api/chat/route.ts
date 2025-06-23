@@ -158,9 +158,9 @@ export async function POST(request: Request) {
 
     const userType: UserType = session.user.type;
 
-    if (userType === 'guest') {
-      return Response.json({redirectToSignUp: true, prompt: requestBody.message});
-    }
+    // if (userType === 'guest') {
+    //   return Response.json({redirectToSignUp: true, prompt: requestBody.message});
+    // }
 
     // --- Prompt Usage Reset & Check Logic START ---
     const dailyQuota = entitlementsByUserType[userType].maxMessagesPerDay;

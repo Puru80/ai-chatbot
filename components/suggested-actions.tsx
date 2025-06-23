@@ -11,14 +11,14 @@ interface SuggestedActionsProps {
   chatId: string;
   append: UseChatHelpers['append'];
   selectedVisibilityType: VisibilityType;
-  isGuest: boolean
+  // isGuest: boolean
 }
 
 function PureSuggestedActions({
                                 chatId,
                                 append,
                                 selectedVisibilityType,
-                                isGuest
+                                // isGuest
                               }: SuggestedActionsProps) {
   const suggestedActions = [
     {
@@ -48,11 +48,11 @@ function PureSuggestedActions({
   const handleActionClick = async (event: any, action: string) => {
     event?.preventDefault();
 
-    if (isGuest) {
-      localStorage.setItem('redirect_chat_id', chatId)
-      setShowGuestModal(true);
-      return;
-    }
+    // if (isGuest) {
+    //   localStorage.setItem('redirect_chat_id', chatId)
+    //   setShowGuestModal(true);
+    //   return;
+    // }
 
     window.history.replaceState({}, '', `/chat/${chatId}`);
     append({
@@ -107,7 +107,7 @@ export const SuggestedActions = memo(
     if (prevProps.chatId !== nextProps.chatId) return false;
     if (prevProps.selectedVisibilityType !== nextProps.selectedVisibilityType)
       return false;
-    if (prevProps.isGuest !== nextProps.isGuest) return false;
+    // if (prevProps.isGuest !== nextProps.isGuest) return false;
 
     return true;
   },

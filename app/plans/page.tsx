@@ -2,10 +2,43 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Bot, Check, Sparkles, Zap, Shield } from "lucide-react"
+import { Bot, Check, Sparkles, Zap, Shield, ArrowLeft } from "lucide-react" // Added ArrowLeft
+import { auth } from "@/app/(auth)/auth"
+import type { UserType } from "@/app/(auth)/auth"
 
-export default function PlansPage() {
-  const plans = [
+type Plan = {
+  name: string;
+  price: string;
+  period: string;
+  description: string;
+  features: string[];
+  buttonText: string;
+  buttonVariant: "outline" | "default";
+  popular: boolean;
+  action?: () => void;
+  disabled?: boolean;
+};
+
+interface PlansPageProps {
+  searchParams?: {
+    from?: string;
+  };
+}
+
+export default async function PlansPage({ searchParams }: PlansPageProps) { // Added searchParams prop
+  const session = await auth();
+  const userType: UserType | undefined = session?.user?.type;
+
+  const fromSource = searchParams?.from;
+  let backLink = "/chat";
+  let backText = "Back to Chat";
+
+  if (fromSource === "home") {
+    backLink = "/";
+    backText = "Back to Home";
+  }
+
+  const staticPlansData = [
     {
       name: "Free",
       price: "$0",
@@ -22,7 +55,7 @@ export default function PlansPage() {
       period: "per month",
       description: "Best for regular users and professionals",
       features: [
-        "50 messages pre day",
+        "50 messages per day",
         "Premium AI models (GPT-4, Gemini)",
         "Enhance Prompt feature",
         "Priority response time",
@@ -31,25 +64,27 @@ export default function PlansPage() {
       buttonVariant: "default" as const,
       popular: true,
     },
-    // {
-    //   name: "Enterprise",
-    //   price: "$99",
-    //   period: "per month",
-    //   description: "For teams and organizations",
-    //   features: [
-    //     "Everything in Pro",
-    //     "Team collaboration",
-    //     "Custom AI model training",
-    //     "Advanced analytics",
-    //     "Priority support",
-    //     "Custom integrations",
-    //     "SLA guarantee",
-    //   ],
-    //   buttonText: "Contact Sales",
-    //   buttonVariant: "outline" as const,
-    //   popular: false,
-    // },
-  ]
+  ];
+
+  const plans: Plan[] = staticPlansData.map(p => {
+    const isCurrent =
+      (p.name === "Pro" && userType === "pro") ||
+      (p.name === "Free" && (userType === "regular"));
+
+    if (isCurrent) {
+      return {
+        ...p,
+        buttonText: "Current Plan",
+        buttonVariant: "outline" as const,
+        disabled: true,
+      };
+    }
+    if (p.name === "Pro" && (userType === "regular")) {
+      // This is where an "Upgrade to Pro" button could be specifically set up
+      // For now, it will show "Get Started" as per current non-disabled logic
+    }
+    return p;
+  });
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
@@ -66,7 +101,7 @@ export default function PlansPage() {
               Overview
             </Link>
             <Link
-              href="/plans"
+              href="/plans" // Keep this as /plans, not with query params for the nav itself
               className="text-slate-700 hover:text-slate-900 font-medium transition-colors border-b-2 border-blue-500"
             >
               Plans
@@ -84,12 +119,12 @@ export default function PlansPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-          {plans.map((plan, index) => (
+          {plans.map((plan) => (
             <Card
               key={plan.name}
-              className={`relative ${plan.popular ? "border-blue-500 shadow-xl scale-105" : "border-slate-200"}`}
+              className={`relative ${plan.popular ? "border-blue-500 shadow-xl scale-105" : "border-slate-200"} ${plan.disabled ? "opacity-75" : ""}`}
             >
-              {plan.popular && (
+              {plan.popular && !plan.disabled && (
                 <div className="absolute -top-4 left-1/2 -translate-x-1/2">
                   <Badge className="bg-blue-600 text-white px-4 py-1">
                     <Sparkles className="size-3 mr-1" />
@@ -119,8 +154,10 @@ export default function PlansPage() {
               <CardFooter className="pt-8">
                 <Button
                   variant={plan.buttonVariant}
-                  className={`w-full ${plan.buttonVariant === "default" ? "bg-blue-600 hover:bg-blue-700" : ""}`}
+                  className={`w-full ${plan.buttonVariant === "default" && !plan.disabled ? "bg-blue-600 hover:bg-blue-700" : ""} ${plan.disabled ? "bg-slate-200 text-slate-500 cursor-not-allowed hover:bg-slate-200" : ""}`}
                   size="lg"
+                  disabled={plan.disabled}
+                  onClick={plan.action}
                 >
                   {plan.buttonText}
                 </Button>
@@ -129,10 +166,19 @@ export default function PlansPage() {
           ))}
         </div>
 
-        {/* Features Comparison */}
+        {/* Back Button Section - Added */}
+        <div className="max-w-4xl mx-auto w-full flex justify-center mt-12">
+          <Button asChild variant="outline" className="text-lg px-8 py-6 hover:scale-105 transition-transform duration-200">
+            <Link href={backLink}>
+              <ArrowLeft className="size-5 mr-2" />
+              {backText}
+            </Link>
+          </Button>
+        </div>
+
+        {/* Features Comparison - this section can remain as is */}
         <div className="mt-20">
           <h2 className="text-3xl font-bold text-center text-slate-900 mb-12">Why Choose ChatAI Pro?</h2>
-
           <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
             <div className="text-center space-y-4">
               <div className="mx-auto bg-blue-100 size-16 rounded-full flex items-center justify-center">
@@ -144,7 +190,6 @@ export default function PlansPage() {
                 responses.
               </p>
             </div>
-
             <div className="text-center space-y-4">
               <div className="mx-auto bg-green-100 size-16 rounded-full flex items-center justify-center">
                 <Zap className="size-8 text-green-600" />
@@ -155,7 +200,6 @@ export default function PlansPage() {
                 responses.
               </p>
             </div>
-
             <div className="text-center space-y-4">
               <div className="mx-auto bg-purple-100 size-16 rounded-full flex items-center justify-center">
                 <Shield className="size-8 text-purple-600" />

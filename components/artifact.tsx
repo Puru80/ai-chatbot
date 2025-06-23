@@ -70,7 +70,7 @@ function PureArtifact({
   selectedVisibilityType,
   shouldEnhancePrompt,
   setShouldEnhancePrompt,
-  isGuest
+  // isGuest
 }: {
   chatId: string;
   input: string;
@@ -89,7 +89,7 @@ function PureArtifact({
   selectedVisibilityType: VisibilityType;
   shouldEnhancePrompt: boolean;
   setShouldEnhancePrompt: (value: boolean) => void;
-  isGuest: boolean
+  // isGuest: boolean
 }) {
   const { artifact, setArtifact, metadata, setMetadata } = useArtifact();
 
@@ -347,7 +347,7 @@ function PureArtifact({
                     selectedVisibilityType={selectedVisibilityType}
                     shouldEnhancePrompt={shouldEnhancePrompt}
                     setShouldEnhancePrompt={setShouldEnhancePrompt}
-                    isGuest={isGuest}
+                    // isGuest={isGuest}
                   />
                 </form>
               </div>
@@ -518,8 +518,8 @@ export const Artifact = memo(PureArtifact, (prevProps, nextProps) => {
   if (!equal(prevProps.messages, nextProps.messages.length)) return false;
   if (prevProps.selectedVisibilityType !== nextProps.selectedVisibilityType) return false;
   if(prevProps.shouldEnhancePrompt !== nextProps.shouldEnhancePrompt) return false;
-  if(prevProps.isGuest !== nextProps.isGuest)
-    return false;
+  // if(prevProps.isGuest !== nextProps.isGuest)
+  //   return false;
 
   return true;
 });

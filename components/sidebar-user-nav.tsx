@@ -21,14 +21,11 @@ import {
 import { useRouter } from 'next/navigation';
 import { toast } from './toast';
 import { LoaderIcon } from './icons';
-import { guestRegex } from '@/lib/constants';
 
 export function SidebarUserNav({ user }: { user: User }) {
   const router = useRouter();
-  const { data, status } = useSession();
+  const { data, status } = useSession(); // data contains user session, including email
   const { setTheme, theme } = useTheme();
-
-  const isGuest = guestRegex.test(data?.user?.email ?? '');
 
   return (
     <SidebarMenu>
@@ -60,7 +57,7 @@ export function SidebarUserNav({ user }: { user: User }) {
                   className="rounded-full"
                 />
                 <span data-testid="user-email" className="truncate">
-                  {isGuest ? 'Guest' : user?.email}
+                  {user?.email ?? 'User'}
                 </span>
                 <ChevronUp className="ml-auto" />
               </SidebarMenuButton>
@@ -94,16 +91,15 @@ export function SidebarUserNav({ user }: { user: User }) {
                     return;
                   }
 
-                  if (isGuest) {
-                    router.push('/login');
-                  } else {
-                    signOut({
-                      redirectTo: '/login',
-                    });
-                  }
+                  // If user is authenticated, the only option is to sign out.
+                  // If not authenticated, this menu shouldn't be visible or should show a login prompt,
+                  // but given the component receives a `user` prop, we assume they are authenticated here.
+                  signOut({
+                    redirectTo: '/login', // Redirect to login after sign out
+                  });
                 }}
               >
-                {isGuest ? 'Login to your account' : 'Sign out'}
+                Sign out
               </button>
             </DropdownMenuItem>
           </DropdownMenuContent>

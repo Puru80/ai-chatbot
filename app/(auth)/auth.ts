@@ -1,13 +1,13 @@
 import {compare} from "bcrypt-ts";
 import NextAuth, {type DefaultSession} from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import {createGuestUser, createUser, getUser} from "@/lib/db/queries";
+import {createUser, getUser} from "@/lib/db/queries";
 import {authConfig} from "./auth.config";
 import {DUMMY_PASSWORD} from "@/lib/constants";
 import type {DefaultJWT} from "next-auth/jwt";
 import GoogleProvider from "next-auth/providers/google";
 
-export type UserType = "guest" | "regular" | "pro";
+export type UserType = "regular" | "pro";
 
 declare module "next-auth" {
   interface Session extends DefaultSession {
@@ -63,14 +63,7 @@ export const {
         return {...user, type: "regular"};
       },
     }),
-    Credentials({
-      id: "guest",
-      credentials: {},
-      async authorize() {
-        const [guestUser] = await createGuestUser();
-        return {...guestUser, type: "guest"};
-      },
-    }),
+
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,

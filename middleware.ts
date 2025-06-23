@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
-import { guestRegex, isDevelopmentEnvironment } from './lib/constants';
+// guestRegex removed from import
+import { isDevelopmentEnvironment } from './lib/constants';
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -24,16 +25,21 @@ export async function middleware(request: NextRequest) {
   });
 
   if (!token) {
-    const redirectUrl = encodeURIComponent(request.url);
-
-    return NextResponse.redirect(
-      new URL(`/api/auth/guest?redirectUrl=${redirectUrl}`, request.url),
-    );
+    // If the user is not authenticated and trying to access the landing page or plans page, let them through.
+    if (pathname === '/' || pathname === '/plans') {
+      return NextResponse.next();
+    }
+    // For any other page, redirect to the login page.
+    // We are no longer using guest users.
+    // const redirectUrl = encodeURIComponent(request.url); // redirectUrl can be handled by NextAuth's callbackUrl
+    return NextResponse.redirect(new URL(`/login`, request.url));
   }
 
-  const isGuest = guestRegex.test(token?.email ?? '');
-
-  if (token && !isGuest && ['/login', '/register'].includes(pathname)) {
+  // const isGuest = guestRegex.test(token?.email ?? ''); // guestRegex and isGuest logic removed
+  // Since guest users are removed, any authenticated user is considered non-guest.
+  // The original logic was to redirect logged-in (non-guest) users away from /login or /register.
+  // This should now apply to any authenticated user.
+  if (token && ['/login', '/register'].includes(pathname)) {
     return NextResponse.redirect(new URL('/', request.url));
   }
 
@@ -43,6 +49,7 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     '/',
+    '/chat',
     '/chat/:id',
     '/api/:path*',
     '/login',

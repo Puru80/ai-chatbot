@@ -44,7 +44,7 @@ function PureMultimodalInput({
   selectedVisibilityType,
   shouldEnhancePrompt,
   setShouldEnhancePrompt,
-  isGuest
+  // isGuest
 }: {
   chatId: string;
   input: UseChatHelpers['input'];
@@ -61,7 +61,7 @@ function PureMultimodalInput({
   selectedVisibilityType: VisibilityType;
   shouldEnhancePrompt: boolean;
   setShouldEnhancePrompt: (value: boolean) => void;
-  isGuest: boolean
+  // isGuest: boolean
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { width } = useWindowSize();
@@ -238,7 +238,7 @@ function PureMultimodalInput({
             append={append}
             chatId={chatId}
             selectedVisibilityType={selectedVisibilityType}
-            isGuest={isGuest}
+            // isGuest={isGuest}
           />
         )}
 
