@@ -25,13 +25,16 @@ interface PlansPageProps {
   };
 }
 
-export default async function PlansPage({ searchParams }: PlansPageProps) { // Added searchParams prop
+export default async function PlansPage({ searchParams }: PlansPageProps) {
   const session = await auth();
   const userType: UserType | undefined = session?.user?.type;
 
-  const fromSource = searchParams?.from;
+  const resolvedSearchParams = await searchParams; // Await searchParams
+  const { from: fromSource } = resolvedSearchParams || {}; // Access properties after resolving
   let backLink = "/chat";
   let backText = "Back to Chat";
+
+  const showBackButton = fromSource === "chat"; // Determine if the button should be shown
 
   if (fromSource === "home") {
     backLink = "/";
@@ -166,15 +169,17 @@ export default async function PlansPage({ searchParams }: PlansPageProps) { // A
           ))}
         </div>
 
-        {/* Back Button Section - Added */}
-        <div className="max-w-4xl mx-auto w-full flex justify-center mt-12">
-          <Button asChild variant="outline" className="text-lg px-8 py-6 hover:scale-105 transition-transform duration-200">
-            <Link href={backLink}>
-              <ArrowLeft className="size-5 mr-2" />
-              {backText}
-            </Link>
-          </Button>
-        </div>
+        {/* Back Button Section - Conditionally Rendered */}
+        {showBackButton && (
+          <div className="max-w-4xl mx-auto w-full flex justify-center mt-12">
+            <Button asChild variant="outline" className="text-lg px-8 py-6 hover:scale-105 transition-transform duration-200">
+              <Link href={backLink}>
+                <ArrowLeft className="size-5 mr-2" />
+                {backText}
+              </Link>
+            </Button>
+          </div>
+        )}
 
         {/* Features Comparison - this section can remain as is */}
         <div className="mt-20">

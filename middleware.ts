@@ -25,8 +25,8 @@ export async function middleware(request: NextRequest) {
   });
 
   if (!token) {
-    // If the user is not authenticated and trying to access the landing page or plans page, let them through.
-    if (pathname === '/' || pathname === '/plans') {
+    // If the user is not authenticated and trying to access the landing page, plans page, login page or register page, let them through.
+    if (['/', '/plans', '/login', '/register'].includes(pathname)) {
       return NextResponse.next();
     }
     // For any other page, redirect to the login page.
