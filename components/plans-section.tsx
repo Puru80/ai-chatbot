@@ -85,8 +85,8 @@ export function PlansSection({
   return (
     <div className="max-w-7xl mx-auto px-6 py-16">
       <div className="text-center mb-16">
-        <h1 className="text-4xl md:text-5xl font-bold text-slate-900 mb-4">{title}</h1>
-        <p className="text-lg text-slate-600 max-w-2xl mx-auto">{description}</p>
+        <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">{title}</h1>
+        <p className="text-lg text-slate-300 max-w-2xl mx-auto">{description}</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
@@ -105,10 +105,10 @@ export function PlansSection({
             )}
 
             <CardHeader className="text-center pb-8">
-              <CardTitle className="text-2xl font-bold">{plan.name}</CardTitle>
-              <div className="mt-4">
-                <span className="text-4xl font-bold text-slate-900">{plan.price}</span>
-                <span className="text-slate-600 ml-2">/{plan.period}</span>
+              <CardTitle className="text-3xl font-bold text-gray-400">{plan.name}</CardTitle>
+              <div className="mt-4 pt-6">
+                <span className="text-4xl font-bold text-slate-100">{plan.price}</span>
+                <span className="text-slate-100 ml-2">/{plan.period}</span>
               </div>
               <CardDescription className="text-base mt-2">{plan.description}</CardDescription>
             </CardHeader>
@@ -117,7 +117,7 @@ export function PlansSection({
               {plan.features.map((feature, featureIndex) => (
                 <div key={featureIndex} className="flex items-center space-x-3">
                   <Check className="size-5 text-green-600 shrink-0" />
-                  <span className="text-slate-700">{feature}</span>
+                  <span className="text-slate-100">{feature}</span>
                 </div>
               ))}
             </CardContent>
