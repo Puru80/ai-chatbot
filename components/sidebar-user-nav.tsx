@@ -95,7 +95,7 @@ export function SidebarUserNav({ user }: { user: User }) {
                   // If not authenticated, this menu shouldn't be visible or should show a login prompt,
                   // but given the component receives a `user` prop, we assume they are authenticated here.
                   signOut({
-                    redirectTo: '/login', // Redirect to login after sign out
+                    redirectTo: '/', // Redirect to home page after sign out
                   });
                 }}
               >

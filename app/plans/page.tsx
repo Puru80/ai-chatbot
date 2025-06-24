@@ -1,23 +1,9 @@
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Bot, Check, Sparkles, Zap, Shield, ArrowLeft } from "lucide-react" // Added ArrowLeft
-import { auth } from "@/app/(auth)/auth"
-import type { UserType } from "@/app/(auth)/auth"
-
-type Plan = {
-  name: string;
-  price: string;
-  period: string;
-  description: string;
-  features: string[];
-  buttonText: string;
-  buttonVariant: "outline" | "default";
-  popular: boolean;
-  action?: () => void;
-  disabled?: boolean;
-};
+import Link from "next/link";
+import { auth } from "@/app/(auth)/auth";
+import type { UserType } from "@/app/(auth)/auth";
+import { Bot, Sparkles, Zap, Shield } from "lucide-react";
+import { PlansSection } from "@/components/plans-section";
+import {headers} from "next/headers";
 
 interface PlansPageProps {
   searchParams?: {
@@ -29,65 +15,25 @@ export default async function PlansPage({ searchParams }: PlansPageProps) {
   const session = await auth();
   const userType: UserType | undefined = session?.user?.type;
 
-  const resolvedSearchParams = await searchParams; // Await searchParams
-  const { from: fromSource } = resolvedSearchParams || {}; // Access properties after resolving
-  let backLink = "/chat";
-  let backText = "Back to Chat";
+  const referer = (await headers()).get('referer');
+  const isFromChat = referer ? new URL(referer).pathname === '/chat' : false;
+  const showMinimalHeader = !!session?.user && isFromChat;
 
-  const showBackButton = fromSource === "chat"; // Determine if the button should be shown
+  const fromSource = (await searchParams)?.from;
+  let backLink = "/chat"; // Default back link if user is logged in
+  let backText = "Back to Chat";
+  // Show back button if user is logged in, or if explicitly coming from home.
+  let showBackButton = !!session?.user || fromSource === "home";
+
 
   if (fromSource === "home") {
     backLink = "/";
     backText = "Back to Home";
+  } else if (!session?.user) {
+    // If user is not logged in and not coming from home, adjust button visibility
+    showBackButton = false;
   }
-
-  const staticPlansData = [
-    {
-      name: "Free",
-      price: "$0",
-      period: "forever",
-      description: "Perfect for trying out our AI chat",
-      features: ["5 messages per day", "Basic AI model access", "Standard response time", "Prompt Enhancer"],
-      buttonText: "Get Started",
-      buttonVariant: "outline" as const,
-      popular: false,
-    },
-    {
-      name: "Pro",
-      price: "$15",
-      period: "per month",
-      description: "Best for regular users and professionals",
-      features: [
-        "50 messages per day",
-        "Premium AI models (GPT-4, Gemini)",
-        "Enhance Prompt feature",
-        "Priority response time",
-      ],
-      buttonText: "Get Started",
-      buttonVariant: "default" as const,
-      popular: true,
-    },
-  ];
-
-  const plans: Plan[] = staticPlansData.map(p => {
-    const isCurrent =
-      (p.name === "Pro" && userType === "pro") ||
-      (p.name === "Free" && (userType === "regular"));
-
-    if (isCurrent) {
-      return {
-        ...p,
-        buttonText: "Current Plan",
-        buttonVariant: "outline" as const,
-        disabled: true,
-      };
-    }
-    if (p.name === "Pro" && (userType === "regular")) {
-      // This is where an "Upgrade to Pro" button could be specifically set up
-      // For now, it will show "Get Started" as per current non-disabled logic
-    }
-    return p;
-  });
+  // If session.user exists and fromSource is not 'home', defaults for backLink and backText are fine.
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
@@ -98,92 +44,33 @@ export default async function PlansPage({ searchParams }: PlansPageProps) {
           <span className="text-xl font-bold text-slate-900">Askro</span>
         </div>
 
-        <div className="flex items-center space-x-8">
+        {!showMinimalHeader && (<div className="flex items-center space-x-8">
           <div className="flex items-center space-x-6">
             <Link href="/" className="text-slate-600 hover:text-slate-900 font-medium transition-colors">
               Overview
             </Link>
             <Link
-              href="/plans" // Keep this as /plans, not with query params for the nav itself
+              href="/plans"
               className="text-slate-700 hover:text-slate-900 font-medium transition-colors border-b-2 border-blue-500"
             >
               Plans
             </Link>
           </div>
-        </div>
+        </div>)}
       </nav>
 
-      <div className="max-w-7xl mx-auto px-6 py-16">
-        <div className="text-center mb-16">
-          <h1 className="text-4xl md:text-5xl font-bold text-slate-900 mb-4">Choose Your Plan</h1>
-          <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-            Select the perfect plan for your AI conversation needs. Upgrade or downgrade at any time.
-          </p>
-        </div>
+      <PlansSection
+        userType={userType}
+        showBackButton={showBackButton}
+        backButtonLink={backLink}
+        backButtonText={backText}
+        // Title and description are default in PlansSection, matching what was here
+      />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-          {plans.map((plan) => (
-            <Card
-              key={plan.name}
-              className={`relative ${plan.popular ? "border-blue-500 shadow-xl scale-105" : "border-slate-200"} ${plan.disabled ? "opacity-75" : ""}`}
-            >
-              {plan.popular && !plan.disabled && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                  <Badge className="bg-blue-600 text-white px-4 py-1">
-                    <Sparkles className="size-3 mr-1" />
-                    Most Popular
-                  </Badge>
-                </div>
-              )}
-
-              <CardHeader className="text-center pb-8">
-                <CardTitle className="text-2xl font-bold">{plan.name}</CardTitle>
-                <div className="mt-4">
-                  <span className="text-4xl font-bold text-slate-900">{plan.price}</span>
-                  <span className="text-slate-600 ml-2">/{plan.period}</span>
-                </div>
-                <CardDescription className="text-base mt-2">{plan.description}</CardDescription>
-              </CardHeader>
-
-              <CardContent className="space-y-4">
-                {plan.features.map((feature, featureIndex) => (
-                  <div key={featureIndex} className="flex items-center space-x-3">
-                    <Check className="size-5 text-green-600 shrink-0" />
-                    <span className="text-slate-700">{feature}</span>
-                  </div>
-                ))}
-              </CardContent>
-
-              <CardFooter className="pt-8">
-                <Button
-                  variant={plan.buttonVariant}
-                  className={`w-full ${plan.buttonVariant === "default" && !plan.disabled ? "bg-blue-600 hover:bg-blue-700" : ""} ${plan.disabled ? "bg-slate-200 text-slate-500 cursor-not-allowed hover:bg-slate-200" : ""}`}
-                  size="lg"
-                  disabled={plan.disabled}
-                  onClick={plan.action}
-                >
-                  {plan.buttonText}
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
-
-        {/* Back Button Section - Conditionally Rendered */}
-        {showBackButton && (
-          <div className="max-w-4xl mx-auto w-full flex justify-center mt-12">
-            <Button asChild variant="outline" className="text-lg px-8 py-6 hover:scale-105 transition-transform duration-200">
-              <Link href={backLink}>
-                <ArrowLeft className="size-5 mr-2" />
-                {backText}
-              </Link>
-            </Button>
-          </div>
-        )}
-
-        {/* Features Comparison - this section can remain as is */}
-        <div className="mt-20">
-          <h2 className="text-3xl font-bold text-center text-slate-900 mb-12">Why Choose ChatAI Pro?</h2>
+      {/* Features Comparison - this section can remain as is */}
+      <div className="max-w-7xl mx-auto px-6 pb-16">
+        <div className="mt-20"> {/* This spacing might need adjustment depending on PlansSection's own padding */}
+          <h2 className="text-3xl font-bold text-center text-slate-900 mb-12">Why Choose Askro Pro?</h2>
           <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
             <div className="text-center space-y-4">
               <div className="mx-auto bg-blue-100 size-16 rounded-full flex items-center justify-center">
@@ -218,5 +105,5 @@ export default async function PlansPage({ searchParams }: PlansPageProps) {
         </div>
       </div>
     </div>
-  )
+  );
 }

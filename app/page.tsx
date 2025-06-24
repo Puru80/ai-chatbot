@@ -1,17 +1,48 @@
 import Link from "next/link";
 import { redirect } from 'next/navigation';
+import { headers } from 'next/headers';
 import { auth } from '@/app/(auth)/auth';
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Sparkles, MessageSquare, Zap, Shield, Users, ArrowRight, Bot, Brain, Rocket } from "lucide-react"
+import type { UserType } from "@/app/(auth)/auth";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"; // Removed CardFooter
+import { Badge } from "@/components/ui/badge";
+import { Sparkles, MessageSquare, Zap, Shield, Users, ArrowRight, Bot, Brain, Rocket } from "lucide-react"; // Removed Check, ArrowLeft
+import { PlansSection } from "@/components/plans-section"; // Added import for PlansSection
 
 export default async function LandingPage() {
   const session = await auth();
+  const userType: UserType | undefined = session?.user?.type;
 
-  if (session?.user) {
+  const referer = (await headers()).get('referer');
+  const isFromChat = referer ? new URL(referer).pathname === '/chat' : false;
+
+  if (session?.user && !isFromChat) {
     redirect('/chat');
   }
+
+  // if (isFromChat) {
+  //   //   // User is logged in and came from /chat, show plans view
+  //   //   return (
+  //   //     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+  //   //       {/* Navigation */}
+  //   //       <nav className="flex items-center justify-between p-6 max-w-7xl mx-auto">
+  //   //         <div className="flex items-center space-x-3">
+  //   //           <Bot className="size-8 text-blue-600" />
+  //   //           <span className="text-xl font-bold text-slate-900">Askro</span>
+  //   //         </div>
+  //   //         {/* No navigation links needed here as per requirement */}
+  //   //       </nav>
+  //   //       <PlansSection
+  //   //         userType={userType}
+  //   //         showBackButton={true}
+  //   //         backButtonLink="/chat"
+  //   //         backButtonText="Back to Chat"
+  //   //       />
+  //   //     </div>
+  //   //   );
+  //   // }
+
+  // Default landing page for users not logged in or not coming from /chat
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       {/* Navigation */}
