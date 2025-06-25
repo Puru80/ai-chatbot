@@ -1,9 +1,16 @@
+"use client"; // Add this line to make it a client component
+
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Check, Sparkles, ArrowLeft } from "lucide-react";
+import { Check, Sparkles, ArrowLeft, Loader2 } from "lucide-react"; // Added Loader2
 import type { UserType } from "@/app/(auth)/auth";
+import { createCheckoutSession, cancelSubscription, type CreateCheckoutSessionActionState, type CancelSubscriptionActionState } from '@/app/(auth)/actions';
+import { useTransition, useState, useEffect } from 'react';
+import { loadStripe } from '@stripe/stripe-js';
+import { useSearchParams } from 'next/navigation'; // For reading query params
+import { toast } from "@/components/ui/use-toast"; // For showing toast messages
 
 // Keep Plan type definition here or move to a shared types file if used elsewhere
 export type Plan = {
@@ -13,10 +20,12 @@ export type Plan = {
   description: string;
   features: string[];
   buttonText: string;
-  buttonVariant: "outline" | "default";
+  buttonVariant: "outline" | "default" | "destructive"; // Added destructive variant
   popular: boolean;
   action?: () => void; // Optional: Define specific actions for buttons
   disabled?: boolean;
+  isPro?: boolean; // Added to identify Pro plan
+  isCancel?: boolean; // Added to identify Cancel button
 };
 
 interface PlansSectionProps {
@@ -36,7 +45,71 @@ export function PlansSection({
                                title = "Choose Your Plan",
                                description = "Select the perfect plan for your AI conversation needs. Upgrade or downgrade at any time.",
                              }: PlansSectionProps) {
-  const staticPlansData: Omit<Plan, 'action' | 'disabled' | 'buttonText' | 'buttonVariant'>[] = [
+  const [isPendingUpgrade, startUpgradeTransition] = useTransition();
+  const [isPendingCancel, startCancelTransition] = useTransition();
+  const [actionError, setActionError] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const sessionId = searchParams.get('session_id');
+    if (sessionId) {
+      toast({
+        title: "Checkout Status",
+        description: "Welcome back! If your payment was successful, your plan will be updated shortly.",
+      });
+      // Optionally, remove session_id from URL to prevent re-triggering
+      // window.history.replaceState(null, '', window.location.pathname);
+    }
+  }, [searchParams]);
+
+
+  const handleUpgrade = async () => {
+    setActionError(null);
+    startUpgradeTransition(async () => {
+      const result = await createCheckoutSession({ status: 'idle' }, new FormData());
+
+      if (result.status === 'success' && result.sessionId) {
+        const stripe = await loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY!);
+        if (stripe) {
+          const { error } = await stripe.redirectToCheckout({ sessionId: result.sessionId });
+          if (error) {
+            setActionError(error.message || 'Failed to redirect to Stripe.');
+            toast({ title: "Error", description: error.message || "Could not redirect to payment.", variant: "destructive" });
+          }
+        } else {
+          setActionError('Stripe.js failed to load.');
+          toast({ title: "Error", description: "Payment gateway failed to load.", variant: "destructive" });
+        }
+      } else {
+        setActionError(result.error || 'Failed to initiate upgrade.');
+        toast({ title: "Upgrade Error", description: result.error || "Could not initiate upgrade.", variant: "destructive" });
+      }
+    });
+  };
+
+  const handleCancelSubscription = async () => {
+    setActionError(null);
+    startCancelTransition(async () => {
+      const result = await cancelSubscription({ status: 'idle' }, new FormData());
+      if (result.status === 'success') {
+        toast({
+          title: "Subscription Canceled",
+          description: "Your Pro plan subscription has been canceled. You will retain Pro access until the end of your current billing period.",
+        });
+        // UI will update once webhook processes and revalidation occurs
+      } else {
+        setActionError(result.error || 'Failed to cancel subscription.');
+        toast({
+          title: "Cancellation Error",
+          description: result.error || "Could not cancel subscription. Please try again or contact support.",
+          variant: "destructive",
+        });
+      }
+    });
+  };
+
+
+  const staticPlansData: Omit<Plan, 'action' | 'disabled' | 'buttonText' | 'buttonVariant' | 'isPro' | 'isCancel'>[] = [
     {
       name: "Free",
       price: "$0",
@@ -61,25 +134,39 @@ export function PlansSection({
   ];
 
   const plans: Plan[] = staticPlansData.map(p => {
-    const isCurrent =
-      (p.name === "Pro" && userType === "pro") ||
-      (p.name === "Free" && (userType === "regular"));
+    const isCurrentUserPro = userType === "pro";
+    const isCurrentPlanPro = p.name === "Pro";
 
-    if (isCurrent) {
+    if (isCurrentPlanPro) { // Pro Plan Card
+      if (isCurrentUserPro) { // User is Pro
+        return {
+          ...p,
+          isPro: true,
+          buttonText: isPendingCancel ? "Cancelling..." : "Cancel Subscription",
+          buttonVariant: "destructive" as const,
+          disabled: isPendingCancel,
+          action: handleCancelSubscription,
+          isCancel: true,
+        };
+      } else { // User is not Pro, show Upgrade
+        return {
+          ...p,
+          isPro: true,
+          buttonText: isPendingUpgrade ? "Processing..." : "Upgrade to Pro",
+          buttonVariant: "default" as const,
+          disabled: isPendingUpgrade,
+          action: handleUpgrade,
+        };
+      }
+    } else { // Free Plan Card
       return {
         ...p,
-        buttonText: "Current Plan",
+        isPro: false,
+        buttonText: userType === "regular" ? "Current Plan" : "Get Started",
         buttonVariant: "outline" as const,
-        disabled: true,
+        disabled: userType === "regular",
       };
     }
-    // TODO: Add logic for upgrade/downgrade actions if needed, e.g., via props
-    return {
-      ...p,
-      buttonText: "Get Started", // Default, can be customized via props or more logic
-      buttonVariant: p.popular ? "default" : "outline" as const,
-      disabled: false, // Can be managed by specific plan logic or props
-    };
   });
 
   return (
@@ -89,13 +176,20 @@ export function PlansSection({
         <p className="text-lg text-slate-300 max-w-2xl mx-auto">{description}</p>
       </div>
 
+      {actionError && (
+        <div className="mb-8 max-w-md mx-auto bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+          <strong className="font-bold">Error: </strong>
+          <span className="block sm:inline">{actionError}</span>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
         {plans.map((plan) => (
           <Card
             key={plan.name}
-            className={`relative ${plan.popular ? "border-blue-500 shadow-xl scale-105" : "border-slate-200"} ${plan.disabled ? "opacity-75" : ""}`}
+            className={`relative ${plan.popular && !plan.isCancel ? "border-blue-500 shadow-xl scale-105" : "border-slate-200"} ${(plan.disabled && !plan.isPro && !plan.isCancel) ? "opacity-75" : ""}`}
           >
-            {plan.popular && !plan.disabled && (
+            {plan.popular && !plan.disabled && !plan.isCancel && (
               <div className="absolute -top-4 left-1/2 -translate-x-1/2">
                 <Badge className="bg-blue-600 text-white px-4 py-1">
                   <Sparkles className="size-3 mr-1" />
@@ -125,11 +219,17 @@ export function PlansSection({
             <CardFooter className="pt-8">
               <Button
                 variant={plan.buttonVariant}
-                className={`w-full ${plan.buttonVariant === "default" && !plan.disabled ? "bg-blue-600 hover:bg-blue-700" : ""} ${plan.disabled ? "bg-slate-200 text-slate-500 cursor-not-allowed hover:bg-slate-200" : ""}`}
+                className={`w-full
+                  ${plan.buttonVariant === "default" && !plan.disabled ? "bg-blue-600 hover:bg-blue-700" : ""}
+                  ${plan.buttonVariant === "destructive" && !plan.disabled ? "bg-red-600 hover:bg-red-700 text-white" : ""}
+                  ${plan.disabled ? "bg-slate-200 text-slate-500 cursor-not-allowed hover:bg-slate-200" : ""}`}
                 size="lg"
-                disabled={plan.disabled}
-                // onClick={plan.action} // Actions would be passed or handled based on context
+                disabled={plan.disabled || (isPendingUpgrade && plan.isPro && !plan.isCancel) || (isPendingCancel && plan.isCancel)}
+                onClick={plan.action}
               >
+                {(isPendingUpgrade && plan.isPro && !plan.isCancel) || (isPendingCancel && plan.isCancel) ? (
+                  <Loader2 className="mr-2 size-4 animate-spin" />
+                ) : null}
                 {plan.buttonText}
               </Button>
             </CardFooter>
