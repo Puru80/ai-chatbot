@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { useRouter } from "next/navigation"; // Added for redirection
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -19,8 +20,14 @@ export type Plan = {
   disabled?: boolean;
 };
 
+import type { Session } from "next-auth"; // Import Session type
+import { useActionState, useEffect, useTransition } from "react"; // For server action
+import { toast } from "sonner"; // For feedback
+import { cancelProSubscription, type CancelProSubscriptionActionState } from "@/app/(auth)/actions"; // Import the action
+
 interface PlansSectionProps {
   userType?: UserType; // Make userType optional as it might not always be available or needed for display
+  session?: Session | null; // Add session to props
   showBackButton?: boolean;
   backButtonLink?: string;
   backButtonText?: string;
@@ -30,12 +37,45 @@ interface PlansSectionProps {
 
 export function PlansSection({
                                userType,
+                               session, // Destructure session
                                showBackButton = false,
                                backButtonLink = "/chat",
                                backButtonText = "Back to Chat",
                                title = "Choose Your Plan",
                                description = "Select the perfect plan for your AI conversation needs. Upgrade or downgrade at any time.",
                              }: PlansSectionProps) {
+  const router = useRouter(); // Added for redirection
+  const [isPending, startTransition] = useTransition();
+
+  const [cancelActionState, cancelAction] = useActionState<CancelProSubscriptionActionState, FormData>(
+    cancelProSubscription,
+    { status: 'idle' },
+  );
+
+  useEffect(() => {
+    if (cancelActionState.status === 'success') {
+      toast.success("Subscription cancelled successfully. You are now on the Free plan.");
+      // The webhook will update the user record, and revalidation should refresh UI.
+      // router.refresh(); // Or rely on revalidatePath from action
+    } else if (cancelActionState.status === 'failed') {
+      toast.error(`Cancellation failed: ${cancelActionState.error || 'Unknown error'}`);
+    } else if (cancelActionState.status === 'not_pro_user') {
+      toast.error("You are not currently on a Pro plan.");
+    } else if (cancelActionState.status === 'missing_subscription_id') {
+      toast.error("Could not find your subscription ID to cancel.");
+    } else if (cancelActionState.status === 'unauthenticated') {
+      toast.error("You need to be logged in to cancel a subscription.");
+      router.push('/login');
+    }
+  }, [cancelActionState, router]);
+
+  const handleCancelPro = () => {
+    startTransition(() => {
+      // FormData is not strictly needed by the action but is part of useActionState's pattern
+      cancelAction(new FormData());
+    });
+  };
+
   const staticPlansData: Omit<Plan, 'action' | 'disabled' | 'buttonText' | 'buttonVariant'>[] = [
     {
       name: "Free",
@@ -73,12 +113,55 @@ export function PlansSection({
         disabled: true,
       };
     }
-    // TODO: Add logic for upgrade/downgrade actions if needed, e.g., via props
+
+    let action = undefined;
+    let buttonText = "Get Started"; // Default
+    let disabled = false;
+
+    if (p.name === "Free" && !userType) { // Not logged in, Free plan
+      action = () => router.push('/register');
+    } else if (p.name === "Pro") { // Pro plan
+      buttonText = userType === "regular" ? "Upgrade to Pro" : "Get Pro"; // Handles logged-in regular and non-logged-in
+      action = () => {
+        if (typeof Paddle === 'undefined') {
+          console.error("Paddle.js not loaded");
+          // Optionally, show a user-facing error
+          return;
+        }
+        const proPlanPriceId = process.env.NEXT_PUBLIC_PADDLE_PRO_PLAN_PRICE_ID;
+        if (!proPlanPriceId) {
+          console.error("Pro plan price ID is not configured.");
+          // Optionally, show a user-facing error
+          return;
+        }
+
+        const paddleCheckoutOptions: any = {
+          items: [{ priceId: proPlanPriceId, quantity: 1 }],
+          successUrl: `${window.location.origin}/chat?pro_upgrade=success`, // Redirect to chat page or a dedicated success page
+        };
+
+        if (session?.user?.email) {
+          paddleCheckoutOptions.customer = { email: session.user.email };
+        }
+        if (session?.user?.id) { // Pass userId if available
+          paddleCheckoutOptions.customData = { userId: session.user.id };
+        }
+
+        Paddle.Checkout.open(paddleCheckoutOptions);
+      };
+    } else if (p.name === "Free" && userType === "pro") { // Logged in as Pro, Free plan
+      // Action for downgrading to Free (implies cancellation)
+      buttonText = "Downgrade to Free";
+      action = handleCancelPro;
+      disabled = isPending; // Disable button while action is pending
+    }
+
     return {
       ...p,
-      buttonText: "Get Started", // Default, can be customized via props or more logic
-      buttonVariant: p.popular ? "default" : "outline" as const,
-      disabled: false, // Can be managed by specific plan logic or props
+      buttonText,
+      buttonVariant: p.popular && !isCurrent ? "default" : "outline" as const,
+      disabled: disabled || isCurrent, // isCurrent implies disabled
+      action,
     };
   });
 
@@ -128,7 +211,7 @@ export function PlansSection({
                 className={`w-full ${plan.buttonVariant === "default" && !plan.disabled ? "bg-blue-600 hover:bg-blue-700" : ""} ${plan.disabled ? "bg-slate-200 text-slate-500 cursor-not-allowed hover:bg-slate-200" : ""}`}
                 size="lg"
                 disabled={plan.disabled}
-                // onClick={plan.action} // Actions would be passed or handled based on context
+                onClick={plan.action} // Use the action from the plan object
               >
                 {plan.buttonText}
               </Button>

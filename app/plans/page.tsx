@@ -61,6 +61,7 @@ export default async function PlansPage({ searchParams }: PlansPageProps) {
 
       <PlansSection
         userType={userType}
+        session={session} // Pass session
         showBackButton={showBackButton}
         backButtonLink={backLink}
         backButtonText={backText}

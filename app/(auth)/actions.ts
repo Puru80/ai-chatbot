@@ -129,3 +129,66 @@ export const upgradeToPro = async (
     return { status: 'failed', error: 'An unknown error occurred.' };
   }
 };
+
+// Interface for the cancelProSubscription action state
+export interface CancelProSubscriptionActionState {
+  status: 'idle' | 'success' | 'failed' | 'unauthenticated' | 'not_pro_user' | 'missing_subscription_id';
+  error?: string;
+}
+
+// Server action to cancel a user's Pro subscription
+export const cancelProSubscription = async (
+  _prevState: CancelProSubscriptionActionState,
+  _formData: FormData, // Not used, but common for server actions
+): Promise<CancelProSubscriptionActionState> => {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return { status: 'unauthenticated', error: 'User is not authenticated.' };
+    }
+
+    // Fetch the user from DB to get their Paddle subscription ID
+    const currentUserArray = await db.select().from(user).where(eq(user.id, session.user.id)).limit(1);
+    if (currentUserArray.length === 0) {
+      return { status: 'failed', error: 'User not found.' };
+    }
+    const currentUser = currentUserArray[0];
+
+    if (currentUser.type !== 'pro') {
+      return { status: 'not_pro_user', error: 'User is not on a Pro plan.' };
+    }
+
+    if (!currentUser.paddleSubscriptionId) {
+      return { status: 'missing_subscription_id', error: 'Paddle subscription ID not found for user.' };
+    }
+
+    // Import paddle dynamically as it's not available during build time for server actions
+    // and to avoid issues if not configured.
+    const { paddle } = await import('@/lib/paddle');
+
+    // Cancel the subscription in Paddle
+    // You might want to choose 'next_billing_period' instead of 'immediately'
+    // depending on your business logic.
+    await paddle.subscriptions.cancel(currentUser.paddleSubscriptionId, { effectiveFrom: 'immediately' });
+
+    // Paddle will send a 'subscription.canceled' webhook.
+    // The webhook handler will update the user's status in the database.
+    // For immediate UI feedback, we can optimistically update here or rely on revalidation after webhook.
+    // For now, we'll rely on the webhook and revalidation.
+
+    // Revalidate paths to update UI
+    revalidatePath('/plans');
+    revalidatePath('/chat'); // Or other relevant paths
+
+    return { status: 'success' };
+
+  } catch (error: any) {
+    console.error('Cancel Pro Subscription action failed:', error);
+    let errorMessage = 'An unknown error occurred during cancellation.';
+    if (error.message) {
+      errorMessage = error.message;
+    }
+    // Check for Paddle specific errors if possible, e.g. error.type from Paddle SDK
+    return { status: 'failed', error: errorMessage };
+  }
+};
