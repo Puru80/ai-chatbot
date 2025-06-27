@@ -30,9 +30,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Handle the event
-    if (event && event.eventType === 'transaction.completed') {
-      const transactionData = event.data;
-      const customerEmail = transactionData.customer?.email;
+    if (event && (await event).eventType === 'transaction.completed') {
+      const transactionData = (await event).data;
+      customerEmail = transactionData.customer?.email;
       const paddleCustomerId = transactionData.customer_id;
       const paddleSubscriptionId = transactionData.subscription_id;
       // Assuming the first item is the primary one for the plan

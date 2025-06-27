@@ -1,3 +1,5 @@
+'use client'
+
 import Link from "next/link";
 import { useRouter } from "next/navigation"; // Added for redirection
 import { Button } from "@/components/ui/button";
@@ -5,29 +7,17 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from "@/components/ui/badge";
 import { Check, Sparkles, ArrowLeft } from "lucide-react";
 import type { UserType } from "@/app/(auth)/auth";
-
-// Keep Plan type definition here or move to a shared types file if used elsewhere
-export type Plan = {
-  name: string;
-  price: string;
-  period: string;
-  description: string;
-  features: string[];
-  buttonText: string;
-  buttonVariant: "outline" | "default";
-  popular: boolean;
-  action?: () => void; // Optional: Define specific actions for buttons
-  disabled?: boolean;
-};
-
+import type {Plan} from "@/constants/plans"
+import {PlansData} from "@/constants/plans";
 import type { Session } from "next-auth"; // Import Session type
 import { useActionState, useEffect, useTransition } from "react"; // For server action
 import { toast } from "sonner"; // For feedback
-import { cancelProSubscription, type CancelProSubscriptionActionState } from "@/app/(auth)/actions"; // Import the action
+import { cancelProSubscription, type CancelProSubscriptionActionState } from "@/app/(auth)/actions";
+// import {Paddle} from "@paddle/paddle-node-sdk"; // Import the action
 
 interface PlansSectionProps {
-  userType?: UserType; // Make userType optional as it might not always be available or needed for display
-  session?: Session | null; // Add session to props
+  userType?: UserType;
+  session?: Session | null;
   showBackButton?: boolean;
   backButtonLink?: string;
   backButtonText?: string;
@@ -76,31 +66,7 @@ export function PlansSection({
     });
   };
 
-  const staticPlansData: Omit<Plan, 'action' | 'disabled' | 'buttonText' | 'buttonVariant'>[] = [
-    {
-      name: "Free",
-      price: "$0",
-      period: "forever",
-      description: "Perfect for trying out our AI chat",
-      features: ["5 messages per day", "Basic AI model access", "Standard response time", "Prompt Enhancer"],
-      popular: false,
-    },
-    {
-      name: "Pro",
-      price: "$15",
-      period: "per month",
-      description: "Best for regular users and professionals",
-      features: [
-        "50 messages per day",
-        "Premium AI models (GPT-4, Gemini)",
-        "Enhance Prompt feature",
-        "Priority response time",
-      ],
-      popular: true,
-    },
-  ];
-
-  const plans: Plan[] = staticPlansData.map(p => {
+  const plans: Plan[] = PlansData.map(p => {
     const isCurrent =
       (p.name === "Pro" && userType === "pro") ||
       (p.name === "Free" && (userType === "regular"));
@@ -122,32 +88,18 @@ export function PlansSection({
       action = () => router.push('/register');
     } else if (p.name === "Pro") { // Pro plan
       buttonText = userType === "regular" ? "Upgrade to Pro" : "Get Pro"; // Handles logged-in regular and non-logged-in
+      const proPlanPriceId = p.priceId;
+
       action = () => {
-        if (typeof Paddle === 'undefined') {
-          console.error("Paddle.js not loaded");
-          // Optionally, show a user-facing error
+        if (!session) {
+          // Redirect to login/register if not logged in, passing priceId in query
+          if (proPlanPriceId) {
+            router.push(`/login?redirect=/checkout&priceId=${proPlanPriceId['month']}`);
+          }
           return;
-        }
-        const proPlanPriceId = process.env.NEXT_PUBLIC_PADDLE_PRO_PLAN_PRICE_ID;
-        if (!proPlanPriceId) {
-          console.error("Pro plan price ID is not configured.");
-          // Optionally, show a user-facing error
-          return;
-        }
+        } else {
 
-        const paddleCheckoutOptions: any = {
-          items: [{ priceId: proPlanPriceId, quantity: 1 }],
-          successUrl: `${window.location.origin}/chat?pro_upgrade=success`, // Redirect to chat page or a dedicated success page
-        };
-
-        if (session?.user?.email) {
-          paddleCheckoutOptions.customer = { email: session.user.email };
         }
-        if (session?.user?.id) { // Pass userId if available
-          paddleCheckoutOptions.customData = { userId: session.user.id };
-        }
-
-        Paddle.Checkout.open(paddleCheckoutOptions);
       };
     } else if (p.name === "Free" && userType === "pro") { // Logged in as Pro, Free plan
       // Action for downgrading to Free (implies cancellation)

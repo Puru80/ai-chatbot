@@ -42,7 +42,6 @@ yarn-error.log*
 /blob-report/
 /playwright/*
 
-.vercel
-.env*.local
-
 .idea
+
+.vscode
