@@ -4,7 +4,9 @@ import { getToken } from 'next-auth/jwt';
 import { isDevelopmentEnvironment } from './lib/constants';
 
 export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+  const { pathname , searchParams} = request.nextUrl;
+  console.log("Middleware Request: ", request)
+  console.log("SearchParams: ", searchParams.getAll('redirect'));
 
   /*
    * Playwright starts the dev server and requires a 200 status to
@@ -40,7 +42,11 @@ export async function middleware(request: NextRequest) {
   // The original logic was to redirect logged-in (non-guest) users away from /login or /register.
   // This should now apply to any authenticated user.
   if (token && ['/login', '/register'].includes(pathname)) {
-    return NextResponse.redirect(new URL('/', request.url));
+    // Redirect authenticated users trying to access login/register to the chat page
+    if (searchParams.getAll('redirect').length != 0) {
+      return NextResponse.redirect(new URL(searchParams.getAll('redirect')[0], request.url));
+    }
+    return NextResponse.redirect(new URL('/chat', request.url));
   }
 
   return NextResponse.next();

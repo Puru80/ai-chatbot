@@ -91,14 +91,18 @@ export function PlansSection({
       const proPlanPriceId = p.priceId;
 
       action = () => {
-        if (!session) {
-          // Redirect to login/register if not logged in, passing priceId in query
-          if (proPlanPriceId) {
-            router.push(`/login?redirect=/checkout&priceId=${proPlanPriceId['month']}`);
-          }
+        const proPriceId = proPlanPriceId ? proPlanPriceId['month'] : null;
+        if (!proPriceId) {
+          toast.error("Pro plan price ID is not configured.");
           return;
-        } else {
+        }
 
+        if (!session) {
+          // User is not logged in. Redirect to login with redirect URL to checkout.
+          router.push(`/login?redirect=/checkout/${proPriceId}`);
+        } else {
+          // User is logged in. Redirect directly to checkout.
+          router.push(`/checkout/${proPriceId}`);
         }
       };
     } else if (p.name === "Free" && userType === "pro") { // Logged in as Pro, Free plan
