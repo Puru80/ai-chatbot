@@ -5,8 +5,6 @@ import { isDevelopmentEnvironment } from './lib/constants';
 
 export async function middleware(request: NextRequest) {
   const { pathname , searchParams} = request.nextUrl;
-  console.log("Middleware Request: ", request)
-  console.log("SearchParams: ", searchParams.getAll('redirect'));
 
   /*
    * Playwright starts the dev server and requires a 200 status to
