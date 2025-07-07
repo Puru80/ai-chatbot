@@ -49,7 +49,7 @@ export function CheckoutContents({ userEmail }: Props) {
             variant: 'one-page',
             displayMode: 'inline',
             theme: 'dark',
-            allowLogout: !userEmail,
+            // allowLogout: !userEmail,
             frameTarget: 'paddle-checkout-frame',
             frameInitialHeight: 450,
             frameStyle: 'width: 100%; background-color: transparent; border: none',
@@ -77,7 +77,7 @@ export function CheckoutContents({ userEmail }: Props) {
   return (
     <div
       className={
-        'rounded-lg md:bg-background/80 md:backdrop-blur-[24px] md:p-10 md:pl-16 md:pt-16 md:min-h-[400px] flex flex-col justify-between relative'
+        'rounded-lg md:bg-background/80 md:backdrop-blur-xl md:p-10 md:pl-16 md:pt-16 md:min-h-[400px] flex flex-col justify-between relative'
       }
     >
       <CheckoutFormGradients />

@@ -27,7 +27,7 @@ export function CheckoutLineItems({ handleQuantityChange, checkoutData, quantity
   return (
     <>
       <div className={'md:pt-12 text-base leading-[20px] font-medium'}>{checkoutData?.items[0].price_name}</div>
-      <QuantityField quantity={quantity} handleQuantityChange={handleQuantityChange} />
+      {/*<QuantityField quantity={quantity} handleQuantityChange={handleQuantityChange} />*/}
       <Separator className={'bg-border/50 mt-6'} />
       <div className={'pt-6 flex justify-between'}>
         <span className={'text-base leading-[20px] font-medium text-muted-foreground'}>Subtotal</span>
