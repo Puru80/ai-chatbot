@@ -4,10 +4,9 @@ import { headers } from 'next/headers';
 import { auth } from '@/app/(auth)/auth';
 import type { UserType } from "@/app/(auth)/auth";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"; // Removed CardFooter
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, MessageSquare, Zap, Shield, Users, ArrowRight, Bot, Brain, Rocket } from "lucide-react"; // Removed Check, ArrowLeft
-import { PlansSection } from "@/components/plans-section"; // Added import for PlansSection
+import { Sparkles, MessageSquare, Zap, Shield, Users, ArrowRight, Bot, Brain, Rocket } from "lucide-react";
 
 export default async function LandingPage() {
   const session = await auth();

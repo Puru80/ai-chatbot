@@ -1,26 +1,23 @@
+'use client'
+
 import Link from "next/link";
+import { useRouter } from "next/navigation"; // Added for redirection
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Check, Sparkles, ArrowLeft } from "lucide-react";
 import type { UserType } from "@/app/(auth)/auth";
-
-// Keep Plan type definition here or move to a shared types file if used elsewhere
-export type Plan = {
-  name: string;
-  price: string;
-  period: string;
-  description: string;
-  features: string[];
-  buttonText: string;
-  buttonVariant: "outline" | "default";
-  popular: boolean;
-  action?: () => void; // Optional: Define specific actions for buttons
-  disabled?: boolean;
-};
+import type {Plan} from "@/constants/plans"
+import {PlansData} from "@/constants/plans";
+import type { Session } from "next-auth"; // Import Session type
+import { useActionState, useEffect, useTransition } from "react"; // For server action
+import { toast } from "sonner"; // For feedback
+import { cancelProSubscription, type CancelProSubscriptionActionState } from "@/app/(auth)/actions";
+// import {Paddle} from "@paddle/paddle-node-sdk"; // Import the action
 
 interface PlansSectionProps {
-  userType?: UserType; // Make userType optional as it might not always be available or needed for display
+  userType?: UserType;
+  session?: Session | null;
   showBackButton?: boolean;
   backButtonLink?: string;
   backButtonText?: string;
@@ -30,37 +27,46 @@ interface PlansSectionProps {
 
 export function PlansSection({
                                userType,
+                               session, // Destructure session
                                showBackButton = false,
                                backButtonLink = "/chat",
                                backButtonText = "Back to Chat",
                                title = "Choose Your Plan",
                                description = "Select the perfect plan for your AI conversation needs. Upgrade or downgrade at any time.",
                              }: PlansSectionProps) {
-  const staticPlansData: Omit<Plan, 'action' | 'disabled' | 'buttonText' | 'buttonVariant'>[] = [
-    {
-      name: "Free",
-      price: "$0",
-      period: "forever",
-      description: "Perfect for trying out our AI chat",
-      features: ["5 messages per day", "Basic AI model access", "Standard response time", "Prompt Enhancer"],
-      popular: false,
-    },
-    {
-      name: "Pro",
-      price: "$15",
-      period: "per month",
-      description: "Best for regular users and professionals",
-      features: [
-        "50 messages per day",
-        "Premium AI models (GPT-4, Gemini)",
-        "Enhance Prompt feature",
-        "Priority response time",
-      ],
-      popular: true,
-    },
-  ];
+  const router = useRouter(); // Added for redirection
+  const [isPending, startTransition] = useTransition();
 
-  const plans: Plan[] = staticPlansData.map(p => {
+  const [cancelActionState, cancelAction] = useActionState<CancelProSubscriptionActionState, FormData>(
+    cancelProSubscription,
+    { status: 'idle' },
+  );
+
+  useEffect(() => {
+    if (cancelActionState.status === 'success') {
+      toast.success("Subscription cancelled successfully. You are now on the Free plan.");
+      // The webhook will update the user record, and revalidation should refresh UI.
+      // router.refresh(); // Or rely on revalidatePath from action
+    } else if (cancelActionState.status === 'failed') {
+      toast.error(`Cancellation failed: ${cancelActionState.error || 'Unknown error'}`);
+    } else if (cancelActionState.status === 'not_pro_user') {
+      toast.error("You are not currently on a Pro plan.");
+    } else if (cancelActionState.status === 'missing_subscription_id') {
+      toast.error("Could not find your subscription ID to cancel.");
+    } else if (cancelActionState.status === 'unauthenticated') {
+      toast.error("You need to be logged in to cancel a subscription.");
+      router.push('/login');
+    }
+  }, [cancelActionState, router]);
+
+  const handleCancelPro = () => {
+    startTransition(() => {
+      // FormData is not strictly needed by the action but is part of useActionState's pattern
+      cancelAction(new FormData());
+    });
+  };
+
+  const plans: Plan[] = PlansData.map(p => {
     const isCurrent =
       (p.name === "Pro" && userType === "pro") ||
       (p.name === "Free" && (userType === "regular"));
@@ -73,12 +79,45 @@ export function PlansSection({
         disabled: true,
       };
     }
-    // TODO: Add logic for upgrade/downgrade actions if needed, e.g., via props
+
+    let action = undefined;
+    let buttonText = "Get Started"; // Default
+    let disabled = false;
+
+    if (p.name === "Free" && !userType) { // Not logged in, Free plan
+      action = () => router.push('/register');
+    } else if (p.name === "Pro") { // Pro plan
+      buttonText = userType === "regular" ? "Upgrade to Pro" : "Get Pro"; // Handles logged-in regular and non-logged-in
+      const proPlanPriceId = p.priceId;
+
+      action = () => {
+        const proPriceId = proPlanPriceId ? proPlanPriceId['month'] : null;
+        if (!proPriceId) {
+          toast.error("Pro plan price ID is not configured.");
+          return;
+        }
+
+        if (!session) {
+          // User is not logged in. Redirect to login with redirect URL to checkout.
+          router.push(`/login?redirect=/checkout/${proPriceId}`);
+        } else {
+          // User is logged in. Redirect directly to checkout.
+          router.push(`/checkout/${proPriceId}`);
+        }
+      };
+    } else if (p.name === "Free" && userType === "pro") { // Logged in as Pro, Free plan
+      // Action for downgrading to Free (implies cancellation)
+      buttonText = "Downgrade to Free";
+      action = handleCancelPro;
+      disabled = isPending; // Disable button while action is pending
+    }
+
     return {
       ...p,
-      buttonText: "Get Started", // Default, can be customized via props or more logic
-      buttonVariant: p.popular ? "default" : "outline" as const,
-      disabled: false, // Can be managed by specific plan logic or props
+      buttonText,
+      buttonVariant: p.popular && !isCurrent ? "default" : "outline" as const,
+      disabled: disabled || isCurrent, // isCurrent implies disabled
+      action,
     };
   });
 
@@ -128,7 +167,7 @@ export function PlansSection({
                 className={`w-full ${plan.buttonVariant === "default" && !plan.disabled ? "bg-blue-600 hover:bg-blue-700" : ""} ${plan.disabled ? "bg-slate-200 text-slate-500 cursor-not-allowed hover:bg-slate-200" : ""}`}
                 size="lg"
                 disabled={plan.disabled}
-                // onClick={plan.action} // Actions would be passed or handled based on context
+                onClick={plan.action} // Use the action from the plan object
               >
                 {plan.buttonText}
               </Button>

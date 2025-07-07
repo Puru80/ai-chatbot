@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation'; // Added useSearchParams
 import { useActionState, useEffect, useState } from 'react';
 
 import { AuthForm } from '@/components/auth-form';
@@ -14,6 +14,8 @@ import LoginButton from "@/components/ui/google-login";
 
 export default function Page() {
   const router = useRouter();
+  const searchParams = useSearchParams(); // Get search params
+  console.log("Search Prams: ", searchParams);
 
   const [email, setEmail] = useState('');
   const [isSuccessful, setIsSuccessful] = useState(false);
@@ -41,10 +43,18 @@ export default function Page() {
       toast({ type: 'success', description: 'Account created successfully!' });
 
       setIsSuccessful(true);
-      updateSession();
-      router.refresh();
+      const redirectUrl = searchParams.get('redirect'); // Get redirect URL from query params
+
+      if (redirectUrl) {
+        // Redirect to the specified URL after registration
+        router.push(redirectUrl);
+      } else {
+        updateSession().then(() => {
+          router.refresh();
+        });
+      }
     }
-  }, [state]);
+  }, [state, router, updateSession, searchParams]);
 
   const handleSubmit = (formData: FormData) => {
     setEmail(formData.get('email') as string);

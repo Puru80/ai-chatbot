@@ -2,6 +2,7 @@ import { Toaster } from 'sonner';
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import { ThemeProvider } from '@/components/theme-provider';
+import Script from 'next/script'; // Import next/script
 
 import './globals.css';
 import { SessionProvider } from 'next-auth/react';
@@ -82,6 +83,26 @@ export default async function RootLayout({
           <Toaster position="top-center" />
           <SessionProvider>{children}</SessionProvider>
         </ThemeProvider>
+        <Script src="https://cdn.paddle.com/paddle/paddle.js" strategy="lazyOnload" />
+        <Script id="paddle-init" strategy="lazyOnload">
+          {`
+            if (typeof Paddle !== 'undefined') {
+              if (process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN) {
+                Paddle.Initialize({
+                  token: process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN,
+                  environment: process.env.NEXT_PUBLIC_PADDLE_ENV === 'production' ? 'live' : 'sandbox',
+                  eventCallback: function(data) {
+                    // console.log('Paddle event:', data); // Optional: for debugging Paddle events
+                  }
+                });
+              } else {
+                console.error('Paddle client token is not defined. Paddle.js will not be initialized.');
+              }
+            } else {
+              console.error('Paddle.js not loaded.');
+            }
+          `}
+        </Script>
       </body>
     </html>
   );

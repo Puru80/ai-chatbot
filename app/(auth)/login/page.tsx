@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation'; // Added useSearchParams
 import { useActionState, useEffect, useState } from 'react';
 import { toast } from '@/components/toast';
 
@@ -14,6 +14,7 @@ import LoginButton from '@/components/ui/google-login';
 
 export default function Page() {
   const router = useRouter();
+  const searchParams = useSearchParams(); // Get search params
 
   const [email, setEmail] = useState('');
   const [isSuccessful, setIsSuccessful] = useState(false);
@@ -40,10 +41,20 @@ export default function Page() {
       });
     } else if (state.status === 'success') {
       setIsSuccessful(true);
-      updateSession();
-      router.refresh();
+      const redirectUrl = searchParams.get('redirect'); // Get redirect URL from query params
+
+      if (redirectUrl) {
+        // Redirect to the specified URL after login
+        router.push(redirectUrl);
+      } else {
+        // updateSession().then(() => {
+        //   router.refresh();
+        // });
+
+        router.push('/checkout/pri_01jynh4qr5g8dgy88h1gbzsrm0');
+      }
     }
-  }, [router, state.status, updateSession]);
+  }, [router, state.status, updateSession, searchParams]);
 
   const handleSubmit = (formData: FormData) => {
     setEmail(formData.get('email') as string);
@@ -65,7 +76,7 @@ export default function Page() {
           <p className="text-center text-sm text-gray-600 mt-4 dark:text-zinc-400">
             {"Don't have an account? "}
             <Link
-              href="/register"
+              href={searchParams.get('redirect') ? `/register?redirect=${searchParams.get('redirect')}` : "/register"}
               className="font-semibold text-gray-800 hover:underline dark:text-zinc-200"
             >
               Sign up
