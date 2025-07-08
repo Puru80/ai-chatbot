@@ -43,15 +43,17 @@ export default function Page() {
       toast({ type: 'success', description: 'Account created successfully!' });
 
       setIsSuccessful(true);
-      const redirectUrl = searchParams.get('redirect'); // Get redirect URL from query params
+      const callbackUrl = searchParams.get('callbackUrl'); // Get callbackUrl from query params
 
-      if (redirectUrl) {
+      if (callbackUrl) {
         // Redirect to the specified URL after registration
-        router.push(redirectUrl);
+        router.push(callbackUrl);
       } else {
-        updateSession().then(() => {
-          router.refresh();
-        });
+        // Default redirect to chat if no callbackUrl is specified
+        // updateSession().then(() => { // updateSession might not be needed if router.push navigates away
+        //   router.push('/chat');
+        // });
+        router.push('/chat'); // Simplified: just push to /chat
       }
     }
   }, [state, router, updateSession, searchParams]);
@@ -76,7 +78,7 @@ export default function Page() {
           <p className="text-center text-sm text-gray-600 mt-4 dark:text-zinc-400">
             {'Already have an account? '}
             <Link
-              href="/login"
+              href={searchParams.get('callbackUrl') ? `/login?callbackUrl=${searchParams.get('callbackUrl')}` : "/login"}
               className="font-semibold text-gray-800 hover:underline dark:text-zinc-200"
             >
               Sign in

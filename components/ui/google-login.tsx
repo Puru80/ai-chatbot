@@ -1,10 +1,31 @@
 import { signIn } from 'next-auth/react';
+import { useSearchParams } from 'next/navigation';
 
 export default function LoginButton() {
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get('callbackUrl');
+
+  const handleGoogleSignIn = () => {
+    // For OAuth providers, NextAuth uses the `callbackUrl` parameter in the `signIn` options
+    // to redirect the user back to the specified URL after successful authentication with the provider.
+    // This `callbackUrl` is sent as a query parameter to the `/api/auth/signin/google` endpoint,
+    // which then uses it to construct the OAuth callback correctly.
+    const signInOptions: { redirect: boolean; callbackUrl?: string } = { redirect: true };
+
+    if (callbackUrl) {
+      signInOptions.callbackUrl = callbackUrl;
+    } else {
+      // If no specific callbackUrl is provided (e.g., user directly navigates to /login),
+      // default to redirecting to /chat.
+      signInOptions.callbackUrl = '/chat';
+    }
+    signIn('google', signInOptions);
+  };
+
   return (
     <button
       type="button"
-      onClick={() => signIn('google', { redirect: true, redirectTo: '/' })}
+      onClick={handleGoogleSignIn}
       className="flex items-center justify-center w-full gap-3 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
     >
       <span className="inline-block w-5 h-5">

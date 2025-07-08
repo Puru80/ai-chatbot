@@ -98,8 +98,8 @@ export function PlansSection({
         }
 
         if (!session) {
-          // User is not logged in. Redirect to login with redirect URL to checkout.
-          router.push(`/login?redirect=/checkout/${proPriceId}`);
+          // User is not logged in. Redirect to login with callbackUrl to checkout.
+          router.push(`/login?callbackUrl=/checkout/${proPriceId}`);
         } else {
           // User is logged in. Redirect directly to checkout.
           router.push(`/checkout/${proPriceId}`);

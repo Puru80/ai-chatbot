@@ -41,17 +41,14 @@ export default function Page() {
       });
     } else if (state.status === 'success') {
       setIsSuccessful(true);
-      const redirectUrl = searchParams.get('redirect'); // Get redirect URL from query params
+      const callbackUrl = searchParams.get('callbackUrl'); // Get callbackUrl from query params
 
-      if (redirectUrl) {
+      if (callbackUrl) {
         // Redirect to the specified URL after login
-        router.push(redirectUrl);
+        router.push(callbackUrl);
       } else {
-        // updateSession().then(() => {
-        //   router.refresh();
-        // });
-
-        router.push('/checkout/pri_01jynh4qr5g8dgy88h1gbzsrm0');
+        // Default redirect to chat if no callbackUrl is specified
+        router.push('/chat');
       }
     }
   }, [router, state.status, updateSession, searchParams]);
@@ -76,7 +73,7 @@ export default function Page() {
           <p className="text-center text-sm text-gray-600 mt-4 dark:text-zinc-400">
             {"Don't have an account? "}
             <Link
-              href={searchParams.get('redirect') ? `/register?redirect=${searchParams.get('redirect')}` : "/register"}
+              href={searchParams.get('callbackUrl') ? `/register?callbackUrl=${searchParams.get('callbackUrl')}` : "/register"}
               className="font-semibold text-gray-800 hover:underline dark:text-zinc-200"
             >
               Sign up
