@@ -49,13 +49,18 @@ export async function POST(request: NextRequest) {
 
       // Determine if this is the Pro plan we expect
       // Compare paddlePriceId with your known PRO_PLAN_PRICE_ID
-      // For now, we'll assume any completed transaction for a subscription makes them pro
-      // const proPlanPriceId = process.env.NEXT_PUBLIC_PADDLE_PRO_PLAN_PRICE_ID;
-      // if (paddlePriceId !== proPlanPriceId) {
-      //   console.log(`Transaction for a different price ID (${paddlePriceId}), not updating to Pro.`);
-      //   return NextResponse.json({ message: 'Transaction for non-pro plan.' }, { status: 200 });
-      // }
-
+      const proPlanPriceId = process.env.NEXT_PUBLIC_PADDLE_PRO_PLAN_PRICE_ID;
+      if (!proPlanPriceId) {
+        console.error('NEXT_PUBLIC_PADDLE_PRO_PLAN_PRICE_ID is not set in environment variables.');
+        // Potentially return an error if this is critical for all transactions
+        // return NextResponse.json({ error: 'Pro plan Price ID not configured.' }, { status: 500 });
+      } else if (paddlePriceId !== proPlanPriceId) {
+        console.log(`Transaction for a different price ID (${paddlePriceId}), not updating to Pro. Expected ${proPlanPriceId}.`);
+        return NextResponse.json({ message: 'Transaction for non-pro plan.' }, { status: 200 });
+      }
+      // If proPlanPriceId is not set, we might choose to proceed or halt.
+      // For now, the logic proceeds if proPlanPriceId is missing but logs an error.
+      // If it's set and doesn't match, it exits.
 
       if (appUserId) {
         // User ID was passed in customData, update this user
